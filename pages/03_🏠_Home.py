@@ -1,0 +1,56 @@
+import streamlit as st
+from utils import get_automated_pages
+from data_base import get_user_progress
+
+# 1. Get User Info
+user = st.session_state.get("user_id", "Guest")
+
+st.title(f"👋 Welcome back, {user}!")
+# --- 01_🏠_Home.py ---
+
+# --- 01_🏠_Home.py ---
+
+# 1. Get total projects from files
+all_pages = get_automated_pages("pages")
+project_titles = [title for title in all_pages.keys() if "Project" in title]
+total_projects = len(project_titles)
+
+# 2. Get user progress (ONLY items in the database)
+user = st.session_state.get("user_id", "Guest")
+db_steps = get_user_progress(user) # This calls your SELECT step FROM progress
+
+# 3. FIX: Only count if the database string is "Completed Project One" 
+# or matches your save_only format exactly.
+# If your utils.py saves as "Completed Project One", use that here:
+completed_count = 0
+for step in db_steps:
+    if "Completed" in step and any(proj in step for proj in project_titles):
+        completed_count += 1
+
+# 4. Progress Bar
+if total_projects > 0:
+    # Ensure ratio is 0.0 to 1.0
+    ratio = min(float(completed_count / total_projects), 1.0)
+    
+    st.subheader(f"You have completed {completed_count} out of {total_projects} projects")
+    st.progress(ratio)
+    st.write(f"**{int(ratio * 100)}%** course complete!")
+
+
+
+st.divider()
+
+# 5. Quick Links to Unlocked Projects
+st.markdown("### 📚 Your Lessons")
+unlocked = st.session_state.get("unlocked_pages", [])
+
+for title in project_titles:
+    col1, col2 = st.columns([3, 1])
+    with col1:
+        st.write(f"**{title}**")
+    with col2:
+        if title in unlocked:
+            if st.button("Open", key=f"btn_{title}"):
+                st.switch_page(all_pages[title])
+        else:
+            st.write("🔒 Locked")
