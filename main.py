@@ -1,7 +1,12 @@
 # --- main.py ---
 import streamlit as st 
-from data_base import get_db_connection
+from data_base import verify_login, get_user_progress, save_and_unlock,save_only
 from utils import get_automated_pages 
+
+from data_base import conn, hash_password, verify_login, get_user_progress, save_and_unlock, save_only
+
+
+#st.write("Available secrets sections:", list(st.secrets.keys()))
 
 # 1. Initialize session state IMMEDIATELY
 if "unlocked_pages" not in st.session_state:
@@ -28,8 +33,6 @@ if "last_user" not in st.session_state or st.session_state.last_user != current_
 # 4. Database Progress (Same as before)
 db_steps = []
 if current_user:
-    conn = get_db_connection()  
-    cursor = conn.cursor()
     try:
         cursor.execute("SELECT step FROM progress WHERE id=?", (current_user,))
         db_steps = [row[0] for row in cursor.fetchall()]
@@ -76,7 +79,7 @@ if st.session_state.get("next_page"):
 if st.session_state.get("user_id"):
     from utils import sticky_navbar
     sticky_navbar()
-
+    
 # 10. Run the page
 pg.run()
 

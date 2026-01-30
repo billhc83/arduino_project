@@ -1,3 +1,7 @@
+streamlit
+sqlalchemy
+psycopg2-binary
+
 altair==6.0.0
 altex==0.2.0
 asn1crypto==1.5.1

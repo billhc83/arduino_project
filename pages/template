@@ -1,0 +1,68 @@
+import streamlit as st
+from PIL import Image
+from utils import hover_zoom_at_cursor, complete_step_and_continue, get_automated_pages
+
+# --- PAGE CONFIG ---
+# (Optionally add st.set_page_config here if not in main.py)
+
+# --- ASSETS ---
+# Replace with the specific image for the new project
+circuit_layout = Image.open("graphics/YOUR_IMAGE_HERE.png")
+
+# --- HEADER ---
+st.title("🚀 Project 5 - Top Secret Mission! 🤫")
+
+st.markdown("""
+Did you know your Arduino can **talk** to your computer? 
+
+Today, you are a **Secret Spy**. You will build a "Data Beam" that sends secret messages from your hardware to your screen!
+
+Get ready to crack the code! ⚡📟
+
+""")
+
+# --- CIRCUIT SECTION ---
+circuit_col1, circuit_col2 = st.columns(2, vertical_alignment="center")
+
+with circuit_col1:
+    st.markdown("""
+### 🔌 Connection Instructions
+- Detail 1
+- Detail 2
+                """)
+
+with circuit_col2:
+    # Key functional zoom component
+    hover_zoom_at_cursor(circuit_layout, width=300, height=300, zoom_factor=2.0, key="circuit_zoom_unique_key")
+
+# --- CODE SECTION ---
+code_col1, code_col2 = st.columns(2)
+
+with code_col1:
+    st.markdown("## 💻 Code")
+    st.code("""
+// PASTE ARDUINO CODE HERE
+""", language="cpp")
+
+with code_col2:
+    st.markdown("""
+## 🧬 Logic Breakdown
+- Explanation 1
+- Explanation 2
+""")
+
+# --- INFO BOXES ---
+st.info("""
+### 🌟 Pro Tips
+- Tip 1
+""")
+
+st.info("""
+### 🔬 Challenges
+- Challenge 1
+""")
+
+# --- NAVIGATION / PROGRESS FUNCTION ---
+if st.button("Complete Project & View Progress", type="primary"):
+    pages_map = get_automated_pages("pages")
+    complete_step_and_continue(pages_map)

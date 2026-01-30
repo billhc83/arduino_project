@@ -34,12 +34,6 @@ def logout_button(in_sidebar=True):
         # 2. Redirect back to start
         st.rerun()
 
-# utils.py
-import streamlit as st
-
-# utils.py
-import streamlit as st
-
 def sticky_navbar():
     # 1. CSS to make the sidebar buttons stay at the very top
     st.markdown("""
@@ -155,3 +149,20 @@ def hover_zoom_at_cursor(image, width=800, height=600, zoom_factor=2.5, key="uni
     """
     
     st.components.v1.html(html_code, height=height+20)
+
+    from sqlalchemy import text
+
+def create_new_user(username, password):
+    """Admin utility to manually add a user to the cloud database."""
+    hashed = hash_password(password)
+    try:
+        with conn.session as s:
+            s.execute(
+                text("INSERT INTO users (username, password) VALUES (:u, :p)"),
+                {"u": username, "p": hashed}
+            )
+            s.commit()
+        return True, f"User {username} created successfully!"
+    except Exception as e:
+        return False, str(e)
+

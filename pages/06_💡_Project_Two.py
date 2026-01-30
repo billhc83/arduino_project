@@ -7,7 +7,7 @@ from utils import complete_step_and_continue, get_automated_pages
 
 circuit_layout = Image.open("graphics/circuit_layout.png")
 
-st.title(r"$\textsf{\Large BLINKING BEACON💡 💡}$", text_alignment = 'center')
+st.title("Project Two - BLINKING BEACON💡 💡")
 st.markdown("""
 ## Goal
 

@@ -10,9 +10,6 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from data_base import save_and_unlock, save_only
 
-if st.button('Back to Launch page'):
-    st.switch_page("pages/03_🏠_Home.py")
-
 uno = Image.open("graphics/uno.jpg")
 breadboard = Image.open("graphics/breadboard.jpg")
 led = Image.open("graphics/LED.jpg")

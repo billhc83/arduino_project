@@ -5,13 +5,9 @@ from PIL import Image
 from utils import hover_zoom_at_cursor
 from utils import complete_step_and_continue, get_automated_pages
 
-
-if st.button('Back to Launch page'):
-    st.switch_page("pages/launch.py")
-
 circuit_layout = Image.open("graphics/circuit_layout.png")
 
-st.title(r"$\textsf{\Large LIGHTS ON!!!💡💡💡}$", text_alignment = 'center')
+st.title("Project One - Lights On! 💡 💡 💡")
 st.divider()
 st.markdown("""
 
