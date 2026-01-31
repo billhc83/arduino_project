@@ -13,7 +13,7 @@ def verify_login(username, password):
     hashed = hash_password(password)
     # conn.query returns a DataFrame; we check if it has any rows
     result = conn.query(
-        "SELECT * FROM users WHERE username = :u AND password = :p",
+        "SELECT * FROM users WHERE LOWER(username) = LOWER(:u) AND password = :p",
         params={"u": username, "p": hashed},
         ttl=0 # Don't cache login checks!
     )

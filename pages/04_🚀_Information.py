@@ -188,6 +188,28 @@ with col2:
 
 st.divider()
 
+st.markdown("""
+    <style>
+    /* Hides the three-dot menu and download button in Chrome/Edge/Safari */
+    video::-internal-media-controls-download-button {
+        display:none;
+    }
+    video::-webkit-media-controls-enclosure {
+        overflow:hidden;
+    }
+    video::-webkit-media-controls-panel {
+        width: calc(100% + 30px);
+    }
+    </style>
+    
+
+""", unsafe_allow_html=True)
+
+st.title("Arduino IDE Download Walkthrough")
+
+video_url = "https://github.com/billhc83/arduino_project/releases/download/v1.0.0/download_arduino.mp4"
+st.video(video_url)
+
 if st.button("Complete Project & View Progress", type="primary"):
     pages_map = get_automated_pages("pages")
     complete_step_and_continue(pages_map)

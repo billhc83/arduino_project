@@ -13,13 +13,14 @@ with st.container(border=True):
     
     with col1:
         if st.button("Login", use_container_width=True, type="primary"):
-            if verify_login(user_input, pass_input):
-                # Setting user_id triggers the logic in main.py
+            clean_user = user_input.strip()
+            clean_pass = pass_input.strip()
+            if verify_login(clean_user, clean_pass):
                 st.session_state.user_id = user_input
-                # Success message (optional, might flash quickly before redirect)
                 st.toast("Welcome back!") 
                 st.rerun()
-        else:
+            else:
+                # Put the error HERE, so it only shows if the login FAILS
                 st.error("Invalid username or password")
 
                 
