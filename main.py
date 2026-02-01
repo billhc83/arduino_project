@@ -38,38 +38,62 @@ if "last_user" not in st.session_state or st.session_state.last_user != current_
     st.session_state.last_user = current_user
     st.rerun()
 
-# 4. Database Progress (Same as before)
-#db_steps = []
-#if current_user:
- #   try:
-  #      cursor.execute("SELECT step FROM progress WHERE id=?", (current_user,))
-   #     db_steps = [row[0] for row in cursor.fetchall()]
-    #except Exception as e:
-     #   db_steps = []
-
-# 5. Build unlocked list (Match by title)
-# main.py - Step 5
-#for step in db_steps:
-    # If the step is "Completed Project One", extract "Project One" to unlock it
- #   clean_step = step.replace("Completed ", "") 
-    
-  #  if clean_step in pages_map and clean_step not in st.session_state.unlocked_pages:
-   #     st.session_state.unlocked_pages.append(clean_step)
-
-
-
 # 6. Build the initial allowed list
 allowed_pages = [p for p in pages_map.values() if p.title in st.session_state.unlocked_pages]
 
-# --- THE SECOND SECTION GOES HERE ---
+# 2. KEEP THIS: Ensure Home is at the absolute top (Index 0)
 if "Home" in pages_map:
     home_page = pages_map["Home"]
+    # If Home is already in the list, move it to index 0
     if home_page in allowed_pages:
         allowed_pages.remove(home_page)
-        allowed_pages.insert(0, home_page)
+    allowed_pages.insert(0, home_page)
 
+# 3. ADD THIS: Inject Feedback at the bottom of the visible list
+if "Feedback" in pages_map:
+    f_page = pages_map["Feedback"]
+    if f_page not in allowed_pages:
+        allowed_pages.append(f_page) 
+
+if st.session_state.get("is_admin") in [True, "true", "True"]:
+    if "Admin" in pages_map:
+        a_page = pages_map["Admin"]
+        if a_page not in allowed_pages:
+            allowed_pages.append(a_page)
+
+# 3. FORCE ADMIN INJECTION
+user_is_admin = st.session_state.get("is_admin") in [True, "true", "True"]
+
+if user_is_admin:
+    if "Admin" in pages_map:
+        admin_page_obj = pages_map["Admin"]
+        if admin_page_obj not in allowed_pages:
+            allowed_pages.append(admin_page_obj)
+            print("✅ SUCCESS: Admin object added to allowed_pages list")
+    else:
+        print("❌ ERROR: Key 'Admin' not found in pages_map")
+else:
+    print(f"🚫 BLOCKED: is_admin is {st.session_state.get('is_admin')}")
+
+print("--- ALL DETECTED PAGE TITLES ---")
+for title, page_obj in pages_map.items():
+    # .title is the visible name, and we'll print the object to see the path
+    print(f"Key in Map: '{title}' | Page Title: '{page_obj.title}'")
+print("---------------------------------")
 # 7. Define Navigation
 pg = st.navigation(allowed_pages)
+
+import time
+# 1. Check for a heartbeat (every 5 minutes)
+HEARTBEAT_INTERVAL = 300 # 5 minutes
+last_heartbeat = st.session_state.get("last_heartbeat", st.session_state.start_time)
+
+if (time.time() - last_heartbeat) > HEARTBEAT_INTERVAL:
+    # Update the current page's time without waiting for a switch
+    duration = round(time.time() - st.session_state.start_time, 2)
+    # Use an 'UPSERT' or just a fresh log entry
+    # (Writing the code here to insert a heartbeat log)
+    st.session_state.last_heartbeat = time.time()
 
 # 8. Track current title
 if pg:
@@ -87,6 +111,41 @@ if st.session_state.get("next_page"):
 if st.session_state.get("user_id"):
     from utils import sticky_navbar
     sticky_navbar()
+
+import time
+
+# 1. Initialize tracking variables
+if "current_page" not in st.session_state:
+    st.session_state.current_page = "None"
+if "start_time" not in st.session_state:
+    st.session_state.start_time = time.time()
+
+# 2. Detect Page Change
+# 'pg' is the result of st.navigation(allowed_pages)
+new_page_title = pg.title 
+
+if new_page_title != st.session_state.current_page:
+    # They just moved! Calculate stay time for the PREVIOUS page
+    if st.session_state.current_page != "None":
+        duration = round(time.time() - st.session_state.start_time, 2)
+        user = st.session_state.get("user_id", "Anonymous")
+        
+        # Only log if they stayed for more than 2 seconds (ignores accidental clicks)
+        if duration > 2:
+            try:
+                from sqlalchemy import text
+                with conn.session as s:
+                    s.execute(
+                        text("INSERT INTO activity_logs (username, page_name, stay_duration_seconds) VALUES (:u, :p, :d)"),
+                        {"u": user, "p": st.session_state.current_page, "d": duration}
+                    )
+                    s.commit()
+            except Exception as e:
+                print(f"Logging error: {e}")
+
+    # Reset for the new page
+    st.session_state.current_page = new_page_title
+    st.session_state.start_time = time.time()
     
 # 10. Run the page
 pg.run()

@@ -207,9 +207,13 @@ st.markdown("""
 
 st.title("Arduino IDE Download Walkthrough")
 
-video_url = "https://github.com/billhc83/arduino_project/releases/download/v1.0.0/download_arduino.mp4"
-st.video(video_url)
+install_arduino = "https://github.com/billhc83/arduino_project/releases/download/v1.0.0/download_arduino.mp4"
+st.video(install_arduino)
 
+st.title("How To Load Your Code")
+
+load_code = "https://github.com/billhc83/arduino_project/releases/download/v1.0.1/First.arduino.code.mp4"
+st.video(load_code)
 if st.button("Complete Project & View Progress", type="primary"):
     pages_map = get_automated_pages("pages")
     complete_step_and_continue(pages_map)

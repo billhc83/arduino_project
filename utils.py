@@ -2,14 +2,33 @@ import streamlit as st
 import base64
 from io import BytesIO
 import os
-from data_base import save_and_unlock, save_only 
+from data_base import save_and_unlock, save_only, log_final_activity, conn
 
 
 # utils.py
+
+@st.cache_data(ttl=86400)  # Caches for 24 hours (86400 seconds)
+def get_user_stats(username):
+    """Calculates total hours spent by a specific user."""
+    query = """
+        SELECT SUM(stay_duration_seconds) / 3600 as total_hours 
+        FROM activity_logs 
+        WHERE username = :u
+    """
+    df = conn.query(query, params={"u": username}, ttl=0)
+    
+    if not df.empty and df.iloc[0]['total_hours'] is not None:
+        return round(df.iloc[0]['total_hours'], 2)
+    return 0.0
+
 def get_automated_pages(directory="pages"):
     pages_dict = {}
+    is_admin = st.session_state.get("is_admin", False)
     for filename in sorted(os.listdir(directory)):
         if filename.endswith(".py"):
+            if  "Admin" in filename and not is_admin:
+                continue
+
             path = os.path.join(directory, filename)
             
             # --- THE KEY FIX ---
@@ -25,6 +44,7 @@ def logout_button(in_sidebar=True):
     target = st.sidebar if in_sidebar else st
     
     if target.button("Log Out 🚪", type="secondary", use_container_width=True):
+        log_final_activity()
         # 1. Clear session data
         keys_to_clear = ["user_id", "unlocked_pages", "last_user", "next_page", "current_page_title"]
         for key in keys_to_clear:

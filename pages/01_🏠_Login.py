@@ -15,10 +15,17 @@ with st.container(border=True):
         if st.button("Login", use_container_width=True, type="primary"):
             clean_user = user_input.strip()
             clean_pass = pass_input.strip()
-            if verify_login(clean_user, clean_pass):
-                st.session_state.user_id = user_input
-                st.toast("Welcome back!") 
-                st.rerun()
+            user_data = verify_login(clean_user, clean_pass)
+            if user_data:
+                print(f"DEBUG: Data from DB: {user_data}")
+                if not user_data.get("is_approved", False):
+                    st.error("🚨 Your account is pending approval by an admin.")
+                else:
+                    st.session_state.is_admin = user_data.get("is_admin", False)
+                    st.session_state.user_id = clean_user
+                    
+                    st.toast("Welcome back!") 
+                    st.rerun()
             else:
                 # Put the error HERE, so it only shows if the login FAILS
                 st.error("Invalid username or password")

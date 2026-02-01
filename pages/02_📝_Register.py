@@ -22,21 +22,14 @@ with st.form("registration_form"):
     new_pass = st.text_input("Choose a Password", type="password")
     confirm_pass = st.text_input("Repeat Password", type="password")
     
-    # --- JOIN CODE ADDED HERE ---
-    join_code = st.text_input("Enter the Arduino Club Join Code", type="password")
-    
+       
     submit = st.form_submit_button("Register")
 
 if submit:
     # 1. Check Join Code first (Bot/Stranger protection)
-    # We will set 'arduino2025' as the code in secrets.toml later
-    correct_code = st.secrets.get("JOIN_CODE", "dev_default")
-    
-    if join_code != correct_code:
-        st.error("Incorrect Join Code. Please contact the administrator.")
     
     # 2. Basic validation
-    elif not new_user or not new_pass:
+    if not new_user or not new_pass:
         st.error("Fields cannot be empty.")
     elif new_pass != confirm_pass:
         st.error("Passwords do not match.")
@@ -56,11 +49,18 @@ if submit:
             try:
                 hashed = hash_password(new_pass)
                 with conn.session as s:
+                    # Explicitly set is_approved to False
                     s.execute(
-                        text("INSERT INTO users (username, password) VALUES (:u, :p)"),
-                        {"u": new_user, "p": hashed}
+                        text("INSERT INTO users (username, password, is_approved) VALUES (:u, :p, :a)"),
+                        {"u": new_user, "p": hashed, "a": False}
                     )
                     s.commit()
-                st.success("Account created! You can now log in.")
+                
+                # --- DISCORD NOTIFICATION TRIGGER ---
+                from data_base import notify_discord_new_request
+                notify_discord_new_request(new_user)
+                
+                st.success("✅ Registration successful! Your account is now pending admin approval. You will receive a notification when you can log in.")
+                
             except Exception as e:
                 st.error(f"Error creating account: {e}")

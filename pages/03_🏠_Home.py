@@ -1,14 +1,22 @@
 import streamlit as st
-from utils import get_automated_pages
+from utils import get_automated_pages, get_user_stats
 from data_base import get_user_progress
 
 # 1. Get User Info
 user = st.session_state.get("user_id", "Guest")
 
 st.title(f"👋 Welcome back, {user}!")
-# --- 01_🏠_Home.py ---
 
-# --- 01_🏠_Home.py ---
+user = st.session_state.get("user_id")
+
+if user:
+    total_time = get_user_stats(user)
+    
+    st.subheader(f"Welcome back, {user}!")
+    
+    # Display the stat in a nice card format
+    st.title(f"{total_time} Hours Of Learning Completed")
+
 
 # 1. Get total projects from files
 all_pages = get_automated_pages("pages")

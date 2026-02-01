@@ -1,6 +1,9 @@
 streamlit
 sqlalchemy
 psycopg2-binary
+pandas
+requests
+
 
 altair==6.0.0
 altex==0.2.0
