@@ -86,7 +86,16 @@ pg = st.navigation(allowed_pages)
 import time
 # 1. Check for a heartbeat (every 5 minutes)
 HEARTBEAT_INTERVAL = 300 # 5 minutes
-last_heartbeat = st.session_state.get("last_heartbeat", st.session_state.start_time)
+current_time = time.time()
+
+if "start_time" not in st.session_state:
+    st.session_state.start_time = current_time
+
+if "last_heartbeat" not in st.session_state:
+    st.session_state.last_heartbeat = st.session_state.start_time
+
+start_time = st.session_state.start_time
+last_heartbeat = st.session_state.last_heartbeat
 
 if (time.time() - last_heartbeat) > HEARTBEAT_INTERVAL:
     # Update the current page's time without waiting for a switch
