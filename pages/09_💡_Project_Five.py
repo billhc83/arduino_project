@@ -1,6 +1,6 @@
 import streamlit as st
 from PIL import Image
-from utils import hover_zoom_at_cursor, complete_step_and_continue, get_automated_pages
+from utils.utils import hover_zoom_at_cursor, complete_step_and_continue, get_automated_pages
 
 # --- PAGE CONFIG ---
 # (Optionally add st.set_page_config here if not in main.py)
@@ -94,8 +94,14 @@ st.info("""
 🧪 **Challenge 2:** Make the messages send **Super Fast** by changing the `delay` number to 100! ⚡
 
 """)
+from utils.steps import complete_step_and_continue
+from utils.utils import get_automated_pages
 
-# --- NAVIGATION / PROGRESS FUNCTION ---
-if st.button("Complete Project & View Progress", type="primary"):
-    pages_map = get_automated_pages("pages")
-    complete_step_and_continue(pages_map)
+pages_map = get_automated_pages("pages")
+buttoncol1, buttoncol2 = st.columns([1,3])
+with buttoncol1:
+    if st.button("Next Project", type = "primary"):
+        complete_step_and_continue(pages_map, current_page_title=st.session_state.get("current_page"))
+
+with buttoncol2:
+    st.markdown("#### ⬅️ Click here to add the next project to the menu")

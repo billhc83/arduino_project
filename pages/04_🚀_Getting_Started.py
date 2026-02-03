@@ -3,7 +3,7 @@ import pandas as pd
 from PIL import Image
 import sys
 import os
-from utils import complete_step_and_continue, get_automated_pages
+from utils.utils import complete_step_and_continue, get_automated_pages
 
 # This adds the parent directory (arduino_project) to the path
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -18,13 +18,9 @@ button = Image.open("graphics/button.png")
 jump = Image.open("graphics/jumper.jpg")
 labeled_breadboard = Image.open("graphics/labled_breadboard.jpg")
 
-st.title(r"$\textsf{\Large 🚀GETTING STARTED}$", text_alignment = 'center')
+st.title("🚀GETTING STARTED")
 st.markdown("""
-                <div style="text-align: center;
-                            font-size: 50px;
-                            font-weight: bold;">
-                🧰 Parts we will use!
-                </div>
+              #   🧰 Parts we will use!
             """,unsafe_allow_html = True)
 uno1 , uno2 = st.columns(2)
 bread1, bread2 = st.columns(2)
@@ -214,9 +210,14 @@ st.title("How To Load Your Code")
 
 load_code = "https://github.com/billhc83/arduino_project/releases/download/v1.0.1/First.arduino.code.mp4"
 st.video(load_code)
-if st.button("Complete Project & View Progress", type="primary"):
-    pages_map = get_automated_pages("pages")
-    complete_step_and_continue(pages_map)
 
+pages_map = get_automated_pages("pages")
+buttoncol1, buttoncol2 = st.columns([1,3])
+with buttoncol1:
+    if st.button("Next Project", type = "primary"):
+        complete_step_and_continue(pages_map, current_page_title=st.session_state.get("current_page"))
+
+with buttoncol2:
+    st.markdown("#### ⬅️ Click here to add the next project to the menu")
 
     

@@ -1,7 +1,11 @@
 import streamlit as st
-from utils import hover_zoom_at_cursor
+from utils.utils import hover_zoom_at_cursor
 from PIL import Image
-from utils import complete_step_and_continue, get_automated_pages
+from utils.utils import complete_step_and_continue, get_automated_pages
+
+# Show toast **once** after rerun
+# User-closable toast notification
+
 
 circuit_layout = Image.open("graphics/project_three_circuit.png")
 
@@ -116,7 +120,14 @@ st.info("""
 🧪 Challenge 1: Make the buzzer beep faster or slower by adding delays.  
 🧪 Challenge 2: Add a second button that activates a warning light in addition to the buzzer.  
 """)
+from utils.steps import complete_step_and_continue
+from utils.utils import get_automated_pages
 
-if st.button("Complete Project & View Progress", type="primary"):
-    pages_map = get_automated_pages("pages")
-    complete_step_and_continue(pages_map)
+pages_map = get_automated_pages("pages")
+buttoncol1, buttoncol2 = st.columns([1,3])
+with buttoncol1:
+    if st.button("Next Project", type = "primary"):
+        complete_step_and_continue(pages_map, current_page_title=st.session_state.get("current_page"))
+
+with buttoncol2:
+    st.markdown("#### ⬅️ Click here to add the next project to the menu")

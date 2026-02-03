@@ -67,7 +67,7 @@ with tab2:
         "SELECT id, username, category, message, created_at FROM feedback ORDER BY created_at DESC", 
         ttl=0
     )
-    
+    print(feedback_df)
     if not feedback_df.empty:
         # Add a 'Select' column for the user to check off rows
         feedback_df.insert(0, "Select", False)
@@ -76,7 +76,7 @@ with tab2:
         edited_df = st.data_editor(
             feedback_df,
             hide_index=True,
-            use_container_width=True,
+            width= "stretch",
             column_config={
                 "id": None, # Hide the ID from the user
                 "Select": st.column_config.CheckboxColumn("Delete?", default=False),
@@ -134,7 +134,7 @@ with tab4:
     edited_data = st.data_editor(
         user_df,
         key="user_editor",
-        use_container_width=True,
+        width="stretch",
         num_rows="dynamic", # Allows adding/deleting rows manually
         column_config={
             "password": st.column_config.TextColumn("Hashed Password (Read-Only)", disabled=True),

@@ -1,5 +1,5 @@
 import streamlit as st
-from utils import get_automated_pages, get_user_stats
+from utils.utils import get_automated_pages, get_user_stats
 from data_base import get_user_progress
 
 # 1. Get User Info
@@ -50,15 +50,19 @@ st.divider()
 
 # 5. Quick Links to Unlocked Projects
 st.markdown("### 📚 Your Lessons")
-unlocked = st.session_state.get("unlocked_pages", [])
+# Load pages
+pages_map = get_automated_pages("pages")
+st.session_state.pages_map = pages_map
 
-for title in project_titles:
-    col1, col2 = st.columns([3, 1])
-    with col1:
-        st.write(f"**{title}**")
-    with col2:
-        if title in unlocked:
-            if st.button("Open", key=f"btn_{title}"):
-                st.switch_page(all_pages[title])
-        else:
-            st.write("🔒 Locked")
+# Normalize
+def normalize(s):
+    return s.lower().replace(" ", "_").strip()
+
+pages_map_norm = {normalize(k): v for k, v in pages_map.items()}
+unlocked_pages_norm = [normalize(p) for p in st.session_state.get("unlocked_pages", [])]
+
+# Build allowed_pages safely
+allowed_pages = [v for k, v in pages_map_norm.items() if k in unlocked_pages_norm]
+
+#st.write("Allowed pages:", [p.title for p in allowed_pages])  # debug
+

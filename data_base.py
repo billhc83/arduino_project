@@ -108,7 +108,7 @@ def log_final_activity():
         duration = round(time.time() - st.session_state.start_time, 2)
         user = st.session_state.get("user_id", "Anonymous")
         
-        
+            
 
 # Only log if they were actually on the page for a moment
         if duration > 2:

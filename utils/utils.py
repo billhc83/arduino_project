@@ -2,13 +2,14 @@ import streamlit as st
 import base64
 from io import BytesIO
 import os
-from data_base import save_and_unlock, save_only, log_final_activity, conn
 
 
 # utils.py
 
 @st.cache_data(ttl=86400)  # Caches for 24 hours (86400 seconds)
 def get_user_stats(username):
+    from data_base import save_and_unlock, save_only, log_final_activity, conn
+
     """Calculates total hours spent by a specific user."""
     query = """
         SELECT SUM(stay_duration_seconds) / 3600 as total_hours 
@@ -21,23 +22,46 @@ def get_user_stats(username):
         return round(df.iloc[0]['total_hours'], 2)
     return 0.0
 
+
+
+import re
+
 def get_automated_pages(directory="pages"):
+    """
+    Dynamically load all .py pages in `directory`.
+    - Admin pages are skipped for non-admins
+    - Home page is marked as default
+    - Returns an **ordered dict** suitable for navigation and step completion
+    """
     pages_dict = {}
     is_admin = st.session_state.get("is_admin", False)
-    for filename in sorted(os.listdir(directory)):
-        if filename.endswith(".py"):
-            if  "Admin" in filename and not is_admin:
-                continue
 
-            path = os.path.join(directory, filename)
-            
-            # --- THE KEY FIX ---
-            # If the filename contains 'Home', set it as the default page
-            is_home = "Home" in filename 
-            page_obj = st.Page(path, default=is_home)
-            
-            pages_dict[page_obj.title] = page_obj
+    # Gather all page files first
+    page_files = [
+        f for f in os.listdir(directory)
+        if f.endswith(".py") and ("Admin" not in f or is_admin)
+    ]
+
+    # Sort numerically if filenames contain numbers, otherwise alphabetically
+    def sort_key(filename):
+        # extract first number in filename
+        m = re.search(r'\d+', filename)
+        return int(m.group()) if m else float('inf'), filename.lower()
+
+    page_files.sort(key=sort_key)
+
+    for filename in page_files:
+        path = os.path.join(directory, filename)
+        is_home = "Home" in filename
+        page_obj = st.Page(path, default=is_home)
+
+        # Use the page title as key for simplicity
+        pages_dict[page_obj.title] = page_obj
+
     return pages_dict
+
+
+
 
 def logout_button(in_sidebar=True):
     # Choose where to draw the button
@@ -55,60 +79,39 @@ def logout_button(in_sidebar=True):
         st.rerun()
 
 def sticky_navbar():
-    # 1. CSS to make the sidebar buttons stay at the very top
+
+    st.divider()
+
     st.markdown("""
-        <style>
-            /* Push the sidebar content down slightly so buttons aren't cramped */
-            [data-testid="stSidebarNav"] {
-                padding-top: 20px !important;
-            }
-            /* Style the logout button specifically */
-            div[data-testid="stSidebar"] .stButton > button {
-                border-radius: 20px;
-            }
-        </style>
-    """, unsafe_allow_html=True)
+            <style>
+                /* Push the sidebar content down slightly so buttons aren't cramped */
+                [data-testid="stSidebarNav"] {
+                    padding-top: 20px !important;
+                }
+                /* Style the logout button specifically */
+                div[data-testid="stSidebar"] .stButton > button {
+                    border-radius: 20px;
+                }
+            </style>
+        """, unsafe_allow_html=True)
 
     # 2. Add buttons to the TOP of the sidebar
     with st.sidebar:
-        st.markdown("### 🛠️ Menu")
         col1, col2 = st.columns(2)
-        
+            
         with col1:
-            if st.button("🏠 Home", use_container_width=True, key="nav_home"):
-                st.session_state.next_page = "Home"
-                st.rerun()
-        
-        with col2:
             if st.button("🚪Log Out", type="secondary", use_container_width=True, key="nav_logout"):
+                st.divider()
                 keys_to_clear = ["user_id", "unlocked_pages", "last_user", "next_page"]
                 for key in keys_to_clear:
-                    if key in st.session_state:
-                        del st.session_state[key]
+                        if key in st.session_state:
+                            del st.session_state[key]
+                
                 st.rerun()
-        st.divider()
-
-
-
-
-def complete_step_and_continue(pages_map):
-    titles = list(pages_map.keys())
-    current_title = st.session_state.get("current_page_title")
-    
-    if current_title in titles:
-        current_index = titles.index(current_title)
-        
-        if current_index + 1 < len(titles):
-            next_title = titles[current_index + 1]
-            
-            # Save progress and unlock next page in DB
-            save_only(f"Completed {current_title}")
-            save_and_unlock(next_title) # (The version where we removed st.rerun)
-            
-            # Use the trigger variable instead of a manual path
-            st.session_state.next_page = "Home" 
-            st.rerun() 
-
+import os
+import streamlit as st
+from data_base import save_only, save_and_unlock  # your DB functions
+from utils.steps import complete_step_and_continue
 
 def hover_zoom_at_cursor(image, width=800, height=600, zoom_factor=2.5, key="unique"):
     # Convert PIL image to base64

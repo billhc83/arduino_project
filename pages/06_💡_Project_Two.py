@@ -1,9 +1,9 @@
 import streamlit as st
 import pandas
 from data_base import save_and_unlock, save_only
-from utils import hover_zoom_at_cursor
+from utils.utils import hover_zoom_at_cursor
 from PIL import Image
-from utils import complete_step_and_continue, get_automated_pages
+from utils.utils import get_automated_pages
 
 circuit_layout = Image.open("graphics/circuit_layout.png")
 
@@ -122,6 +122,14 @@ with col2:
 
 st.info("🚀Try changing the number inside `delay(500)` to `delay(100)`. Does your robot blink faster or slower?")
 
-if st.button("Complete Project & View Progress", type="primary"):
-    pages_map = get_automated_pages("pages")
-    complete_step_and_continue(pages_map)
+from utils.steps import complete_step_and_continue
+from utils.utils import get_automated_pages
+
+pages_map = get_automated_pages("pages")
+buttoncol1, buttoncol2 = st.columns([1,3])
+with buttoncol1:
+    if st.button("Next Project", type = "primary"):
+        complete_step_and_continue(pages_map, current_page_title=st.session_state.get("current_page"))
+
+with buttoncol2:
+    st.markdown("#### ⬅️ Click here to add the next project to the menu")
