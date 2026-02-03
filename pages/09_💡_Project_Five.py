@@ -42,7 +42,7 @@ with circuit_col1:
                 """)
 
 with circuit_col2:
-    st.markdown("hi")
+    st.markdown("")
     # Key functional zoom component
     #hover_zoom_at_cursor(circuit_layout, width=300, height=300, zoom_factor=2.0, key="circuit_zoom_unique_key")
 
