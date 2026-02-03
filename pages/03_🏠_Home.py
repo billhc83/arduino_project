@@ -99,11 +99,23 @@ for i in range(0, len(project_items), projects_per_row):
                 )
 
                 # Button area (natural height)
-                if normalize(title) in unlocked_norm:
-                    if st.button("✅ Open", use_container_width=True, key=f"open_{title}"):
+                key_safe_title = normalize(title)
+
+                if key_safe_title in unlocked_norm:
+                    if st.button(
+                        "✅ Open",
+                        use_container_width=True,
+                        key=f"open_{key_safe_title}"
+                    ):
                         st.switch_page(page)
                 else:
-                    st.button("🔒 Locked", disabled=True, use_container_width=True)
+                    st.button(
+                        "🔒 Locked",
+                        disabled=True,
+                        use_container_width=True,
+                        key=f"locked_{key_safe_title}"
+                    )
+
 
 
 from utils.badges import badges  # <- import the import streamlit as st
@@ -136,7 +148,6 @@ unlocked_badges = [b for b in badges.values() if b["trigger"](unlocked_pages)]
 # 2. Iterate through your themed tiers
 for tier_key in TIER_ORDER:
     theme = TIER_THEMES[tier_key]
-    print(theme)
     # Filter badges for this specific tier
     tier_badges = [b for b in unlocked_badges if b.get("tier") == tier_key]
     
