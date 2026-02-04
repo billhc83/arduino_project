@@ -1,5 +1,7 @@
 import streamlit as st
 from utils.utils import get_automated_pages, get_user_stats
+from data_base import conn
+from sqlalchemy import text
 
 # -----------------------------
 # 1️⃣ Helpers
@@ -25,6 +27,41 @@ if user != "Guest":
     st.subheader(f"{total_time} Hours Of Learning Completed")
 
 st.divider()
+
+#Display challenges feedback
+
+# home.py
+
+# 1. Fetch only the most recent UNVIEWED verdict
+sub_query = """
+    SELECT submission_id, page_title, status, admin_feedback 
+    FROM challenge_submissions 
+    WHERE user_id = :u 
+      AND status IN ('approved', 'rejected') 
+      AND is_viewed = FALSE
+    ORDER BY last_updated DESC 
+    LIMIT 1
+"""
+
+sub_result = conn.query(sub_query, params={"u": st.session_state.user_id}, ttl=0)
+
+if not sub_result.empty:
+    latest_sub = sub_result.iloc[0].to_dict()
+    
+    # 2. Display the message
+    if latest_sub['status'] == 'approved':
+        st.success(f"### 🎉 Challenge Approved!\nYour work on **{latest_sub['page_title']}** was accepted.")
+    else:
+        st.error(f"### ✍️ Revision Needed: {latest_sub['page_title']}\n**Feedback:** {latest_sub['admin_feedback']}")
+
+    # 3. Mark it as viewed so it disappears on the next refresh/visit
+    with conn.session as s:
+        s.execute(
+            text("UPDATE challenge_submissions SET is_viewed = TRUE WHERE submission_id = :id"),
+            {"id": latest_sub['submission_id']}
+        )
+        s.commit()
+
 
 # -----------------------------
 # 3️⃣ Load all pages

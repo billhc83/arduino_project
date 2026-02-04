@@ -62,6 +62,8 @@ if st.session_state.get("current_page") not in pages_map:
 if st.session_state.user_id:
     sticky_navbar()
 
+
+st.session_state.pages_map = pages_map
 # ---------------- 7. Navigation widget ----------------
 if not allowed_pages:
     st.error("No pages available! Check your pages folder and unlocked_pages.")

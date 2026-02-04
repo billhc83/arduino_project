@@ -36,13 +36,26 @@ def complete_step_and_continue(pages_map, current_page_title=None):
     # Unlock next step
     titles_norm = list(pages_map_norm.keys())
     idx = titles_norm.index(current_norm)
+    print(idx)
     next_title = None
     if idx + 1 < len(titles_norm):
         next_norm = titles_norm[idx + 1]
+        print(next_norm)
         next_title = list(pages_map.keys())[list(pages_map_norm.keys()).index(next_norm)]
         save_and_unlock(next_title)
         if next_title not in unlocked_pages:
             unlocked_pages.append(next_title)
+        # 2. THE SPECIAL CASE: If finishing Project 10, find the first challenge in range
+    if current_norm.startswith("project_nine"):
+        # Automate the list: Grab everything in the 100-150 range from your map
+       all_titles = list(pages_map.keys())
+        # 2. Find the first title that is a challenge
+       first_challenge = next((t for t in all_titles if "Challenge" in t), None)
+       if first_challenge:
+            # 4. Save and Unlock using your existing function
+            save_and_unlock(first_challenge)
+            if first_challenge not in unlocked_pages:
+                unlocked_pages.append(first_challenge)
     st.session_state.unlocked_pages = unlocked_pages
 
     # Optional signal for UI

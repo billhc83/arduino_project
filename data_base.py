@@ -139,3 +139,44 @@ def notify_discord_feedback(username, category, message):
     }
     import requests
     requests.post(webhook_url, json=payload)
+
+def admin_process_challenge(target_user_id, page_title, verdict, feedback, pages_map):
+    """Updates submission status and unlocks the next step if approved."""
+    with conn.session as s:
+        # 1. Update the submission status and feedback
+        s.execute(
+            text("""
+                UPDATE challenge_submissions 
+                SET status = :v, admin_feedback = :f,
+                is_viewed = FALSE,
+                last_updated = CURRENT_TIMESTAMP
+                WHERE user_id = :u AND page_title = :p
+            """),
+            {"v": verdict, "f": feedback, "u": target_user_id, "p": page_title}
+        )
+        
+        # 2. If approved, find and unlock the next page for that user
+                # ... inside admin_process_challenge ...
+        if verdict == "approved":
+            # 1. Build a list of ONLY the challenges using your keyword
+            # Since pages_map is an OrderedDict, the sequence is preserved
+            challenge_sequence = [t for t in pages_map.keys() if " Challenge" in t]
+            
+            # 2. Find where the user is in the challenge sequence
+            if page_title in challenge_sequence:
+                idx = challenge_sequence.index(page_title)
+                
+                # 3. Unlock the next challenge title if one exists
+                if idx + 1 < len(challenge_sequence):
+                    next_challenge = challenge_sequence[idx + 1]
+                    
+                    s.execute(
+                        text("INSERT INTO progress (id, step) VALUES (:u, :s) ON CONFLICT DO NOTHING"),
+                        {"u": target_user_id, "s": next_challenge}
+                    )
+                else:
+                    # They finished the last challenge in the list!
+                    pass
+
+        s.commit()
+
