@@ -3,6 +3,7 @@ sqlalchemy
 psycopg2-binary
 pandas
 requests
+time
 
 
 altair==6.0.0
