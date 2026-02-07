@@ -52,8 +52,9 @@ with circuit_col1:
 ##### 🧶 Wires:   
 1.  **Pin 13** to **row 10 column a** (Power for the light)
 2.  **Pin GND** to  **- rail ** (The ground path)
-3.  **- rail/ground** to row 20 column a
-4.  **Pin A0** to row 25 column a 
+3.  **- rail/ground** to row 25 column a
+4.  **Pin A0** to row 20 column a 
+5.  **Pin 5V** to row 15 column a
 """)
 with circuit_col2:
     st.info("🧠 **Engineer Tip:** We are combining an **INPUT** (the eye) with an **OUTPUT** (the light) to make a smart machine!")

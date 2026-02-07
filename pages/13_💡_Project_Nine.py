@@ -9,7 +9,7 @@ from utils.utils import hover_zoom_at_cursor, complete_step_and_continue, get_au
 # workshop_layout = Image.open("graphics/power_slot_build.png")
 
 # --- HEADER ---
-st.title("🛠️ Project 11 - The Universal Power Slot")
+st.title("🛠️ Project 9 - The Universal Power Slot")
 
 st.markdown("""
 Welcome to the Design Lab, **Senior Systems Engineer**! 👷‍♂️👷‍♀️

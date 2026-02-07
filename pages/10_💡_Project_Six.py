@@ -45,8 +45,8 @@ with circuit_col1:
 🧶 3 Wires:
 
   Pin 5V to row 15 column a (Power to the 👁️ )
-  Pin A0 to row 25 column a (Signal between LDR and Resistor)
-  Pin GND to row 20 column a (Ground for the Resistor)
+  Pin A0 to row 20 column a (Signal between LDR and Resistor)
+  Pin GND to row 25 column a (Ground for the Resistor)
                 """)
 
 with circuit_col2:
@@ -73,7 +73,7 @@ void loop() {
   Serial.println(oceanLight);
 
   if (oceanLight > 400) {
-    Serial.println("" +
+    Serial.println(""
           "☀️ SURFACE: I see dolphins! 🐬");
   } 
   else {

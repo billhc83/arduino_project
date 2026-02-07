@@ -95,6 +95,8 @@ with res1:
 
     It slows electricity down so the LED does not break.
 
+    The little lines of color on the resistor tell you how strong it is!!
+
     Always use one with LEDs.
                 
             """)

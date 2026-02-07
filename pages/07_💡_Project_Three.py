@@ -33,7 +33,7 @@ with circuit1:
 
 - Long leg → row 6, column **e**  
 - Short leg → row 6, column **f**  
-- Resistor → row 6 **h** → row 10 **h**
+- Resistor 330 Ohms → row 6 **h** → row 10 **h**
 
 **Wires**
 

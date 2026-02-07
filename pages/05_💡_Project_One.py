@@ -103,13 +103,13 @@ with circuit1:
 
       * Short leg: row 6 column f
 
-    ##### Resistor: 
+    ##### Resistor 330 Ohms: 
       
       row 6 column h, row 10 column h
 
     ##### 2 Wires:   
         
-    1:  pin 8, row 6 column a
+    1:  Arduino pin 8, row 6 column a
 
     2:  Arduino pin GND, row 10 column f
 

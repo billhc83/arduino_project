@@ -70,7 +70,11 @@ if not allowed_pages:
 else:
     pg = st.navigation(allowed_pages)
     if pg:
+        from data_base import log_final_activity
+        import time
+        log_final_activity()
         st.session_state.current_page = pg.title
+        st.session_state.start_time = time.time()
         pg.run()
 
 # ---------------- 8. Sticky navbar ----------------

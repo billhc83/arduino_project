@@ -7,7 +7,7 @@ from utils.utils import complete_step_and_continue, get_automated_pages
 # User-closable toast notification
 
 
-circuit_layout = Image.open("graphics/project_three_circuit.png")
+circuit_layout = Image.open("graphics/project_four_circuit.png")
 
 st.title("🚀Project 4 – Space Explorer Button Buzzer")
 
@@ -61,6 +61,7 @@ with circuit1:
 **Wires**
 
 - Arduino **pin 2** → row 14 **a**  
+- Arduino **Ground** → negative (-) rail
 - Wire from row 14 **j** → negative (–) rail
 
 ---
@@ -111,7 +112,7 @@ st.info("""
 
 💡 Tip 1: Make sure the buzzer’s + and – are in the correct holes!  
 💡 Tip 2: Follow the energy path like a rocket fuel line 🚀  
-💡 Tip 3: Press the button slowly and watch your spaceship come alive ⚡
+💡 Tip 3: If you want a louder buzzer remove the resistor !!!!⚡
 """)
 
 st.info("""

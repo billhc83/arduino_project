@@ -143,6 +143,47 @@ with tab3:
     else:
         st.info("No activity recorded yet.")
 
+    st.subheader("📊 Content Engagement Analysis")
+
+# Fetch logs from Postgres
+    logs_df = conn.query("SELECT page_name, stay_duration_seconds FROM activity_logs", ttl=0)
+
+    if not logs_df.empty:
+        # 1. Calculate Average & Total time per page
+        pages_to_ignore = ['Login', 'Register']
+        
+
+        filtered_df = logs_df[~logs_df['page_name'].str.contains('|'.join(pages_to_ignore), case=False, na=False)]  
+        engagement = logs_df.groupby("page_name")["stay_duration_seconds"].agg(['mean', 'count']).reset_index()
+        engagement.columns = ['Page Name', 'Avg Seconds', 'Total Visits']
+        
+        # Convert to minutes for easier reading
+        engagement['Avg Minutes'] = (engagement['Avg Seconds'] / 60).round(2)
+        
+        # 2. Sort by highest engagement
+        engagement = engagement.sort_values(by="Avg Minutes", ascending=False)
+
+        # 3. Display the Graph
+        st.write("### Which pages keep users busy the longest?")
+        st.bar_chart(
+            data=engagement, 
+            x="Page Name", 
+            y="Avg Minutes", 
+            color="#29b5e8" # A nice cyan-blue
+        )
+
+        # 4. Show the "Busiest" pages
+        col1, col2 = st.columns(2)
+        with col1:
+            top_page = engagement.iloc[0]
+            st.metric("Most Engaging Page", top_page['Page Name'], f"{top_page['Avg Minutes']} mins avg")
+        with col2:
+            most_visited = engagement.sort_values(by="Total Visits", ascending=False).iloc[0]
+            st.metric("Most Visited Page", most_visited['Page Name'], f"{int(most_visited['Total Visits'])} visits")
+    else:
+        st.info("Not enough data to generate engagement metrics yet.")
+
+
 with tab4:
     st.title("User Management")
     st.subheader("👥 Edit App Users")
@@ -220,8 +261,7 @@ with tab5:
     else:
         for _, row in pending.iterrows():
             with st.expander(f"Review: {row['user_id']} - {row['page_title']}"):
-                st.write("**Submitted Content:**")
-                st.info(row['content'])
+                st.code(f"{row['content']}", language="cpp")
                 
                 feedback_text = st.text_area("Admin Feedback / Revision Notes", key=f"feed_{row['submission_id']}")
                 
