@@ -29,4 +29,4 @@ st.divider()
 # Optional: show current progress only if logged in
 if st.session_state.get("user_id"):
     st.info(f"Welcome back, **{st.session_state.user_id}**!")
-    st.write(f"You have unlocked: {', '.join(st.session_state.unlocked_pages)}")
+    st.write(f"You have unlocked: {', '.join(st.session_state.get('unlocked_pages', []))}")

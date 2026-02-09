@@ -27,9 +27,7 @@ circuit1, circuit2 = st.columns(2, vertical_alignment= "center")
 
 with circuit1:
     st.markdown("""
-### 💡 LED (Energy Crystal)
-
-**Parts**
+ **💡 LED (Energy Crystal)**
 
 - Long leg → row 6, column **e**  
 - Short leg → row 6, column **f**  
@@ -42,9 +40,7 @@ with circuit1:
 
 ---
 
-### 🔘 Button (Trigger Switch)
-
-**Parts**
+**🔘 Button (Trigger Switch)**
 
 - Button leg → row 14 **e**  
 - Button leg → row 14 **f**

@@ -2,10 +2,29 @@ import streamlit as st
 import hashlib
 from sqlalchemy import create_engine, text
 import requests
+
+from sqlalchemy import text
+
+def update_password_secure(username, new_password):
+    """Hashes and updates the password in the DB."""
+    hashed_new = hash_password(new_password)
+    try:
+        with conn.session as s:
+            s.execute(
+                text("UPDATE users SET password = :p WHERE LOWER(username) = LOWER(:u)"),
+                {"p": hashed_new, "u": username.strip()}
+            )
+            s.commit()
+        return True
+    except Exception as e:
+        st.error(f"Database error: {e}")
+        return False
+
+
 def hash_password(password):
     return hashlib.sha256(str.encode(password)).hexdigest()
+    # Initialize connection
 
-# Initialize connection
 conn = st.connection("postgresql", type="sql")
 
 def verify_login(username, password):
@@ -16,7 +35,7 @@ def verify_login(username, password):
         "SELECT is_admin, is_approved FROM users WHERE LOWER(username) = LOWER(:u) AND password = :p",
         params={"u": username, "p": hashed},
         ttl=0 # Don't cache login checks!
-    )
+        )
     if not result.empty:
         # Return a dictionary of the user's status
         user_dict = result.iloc[0].to_dict()
@@ -48,7 +67,7 @@ def save_and_unlock(phase_name):
             {"u": user_id, "s": phase_name}
         )
         s.commit()
-    
+        
     # ... rest of your session_state logic
 
 
@@ -125,7 +144,6 @@ def log_final_activity():
 def notify_discord_feedback(username, category, message):
     webhook_url = st.secrets.get("DISCORD_WEBHOOK_URL")
     if not webhook_url: return
-
     payload = {
         "embeds": [
             {
@@ -153,22 +171,22 @@ def admin_process_challenge(target_user_id, page_title, verdict, feedback, pages
             """),
             {"v": verdict, "f": feedback, "u": target_user_id, "p": page_title}
         )
-        
+            
         # 2. If approved, find and unlock the next page for that user
                 # ... inside admin_process_challenge ...
         if verdict == "approved":
             # 1. Build a list of ONLY the challenges using your keyword
             # Since pages_map is an OrderedDict, the sequence is preserved
             challenge_sequence = [t for t in pages_map.keys() if " Challenge" in t]
-            
+                
             # 2. Find where the user is in the challenge sequence
             if page_title in challenge_sequence:
                 idx = challenge_sequence.index(page_title)
-                
+                    
                 # 3. Unlock the next challenge title if one exists
                 if idx + 1 < len(challenge_sequence):
                     next_challenge = challenge_sequence[idx + 1]
-                    
+                     
                     s.execute(
                         text("INSERT INTO progress (id, step) VALUES (:u, :s) ON CONFLICT DO NOTHING"),
                         {"u": target_user_id, "s": next_challenge}

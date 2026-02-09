@@ -19,5 +19,13 @@ badges = {
         "icon": "🎉",
         "points": ["🚀 Started your first project", "🎯 Completed it successfully"],
         "trigger": lambda unlocked: any("project_one" in p.lower() for p in unlocked)
+    },
+    "first_challenge":{
+        "title": "First Challenge Complete",
+        "tier": "blue",
+        "subtitle": "Challenge cooker",
+        "icon": "📚💻✍🏼📓",
+        "points": ["🚀 Completed first challenge", "🎯 code writer!!!"],
+        "trigger": lambda unlocked: any("challenge_two" in p.lower() for p in unlocked)
     }
 }

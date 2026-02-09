@@ -209,3 +209,45 @@ for tier_key in TIER_ORDER:
                         for point in badge["points"]:
                             st.markdown(f"✨ <small>{point}</small>", unsafe_allow_html=True)
         st.divider()
+with st.expander("Change Password"):
+    import streamlit as st
+    from data_base import verify_login, update_password_secure
+
+    st.subheader("Update Your Password")
+
+    with st.form("password_reset_form"):
+        # 1. Identify the user
+        # If they are already logged in, we use their session_state username
+        current_user = st.session_state.get("user_id", "")
+        user_to_update = st.text_input("Username", value=current_user)
+        
+        # 2. Collect passwords
+        old_pw = st.text_input("Old Password", type="password")
+        st.divider()
+        new_pw = st.text_input("New Password", type="password")
+        confirm_pw = st.text_input("Confirm New Password", type="password")
+        
+        submit = st.form_submit_button("Update Password", use_container_width=True)
+
+        if submit:
+            # Step A: Validate the old password against the DB
+            # This prevents anyone from changing a password that isn't theirs
+            if not verify_login(user_to_update, old_pw):
+                st.error("❌ Old password or username is incorrect.")
+                
+            # Step B: Check if new passwords match
+            elif new_pw != confirm_pw:
+                st.error("❌ New passwords do not match.")
+                
+            # Step C: Basic length check
+            elif len(new_pw) < 6:
+                st.error("❌ New password must be at least 6 characters.")
+                
+            # Step D: All clear? Update the DB
+            else:
+                if update_password_secure(user_to_update, new_pw):
+                    st.success("✅ Password updated successfully!")
+                    st.balloons()
+                else:
+                    st.error("❌ Something went wrong with the database update.")
+    pass
