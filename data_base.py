@@ -30,19 +30,25 @@ conn = st.connection("postgresql", type="sql")
 def verify_login(username, password):
     """Checks if the user exists and the password is correct."""
     hashed = hash_password(password)
-    # conn.query returns a DataFrame; we check if it has any rows
+    
+    # We JOIN the public info (admin/approved) with the private password
+    query = """
+        SELECT u.is_admin, u.is_approved 
+        FROM public.users u
+        JOIN private.user_creds c ON LOWER(u.username) = LOWER(c.username)
+        WHERE LOWER(u.username) = LOWER(:u) AND c.password = :p
+    """
+    
+    # Use the [Streamlit SQL Connection](https://docs.streamlit.io)
     result = conn.query(
-        "SELECT is_admin, is_approved FROM users WHERE LOWER(username) = LOWER(:u) AND password = :p",
+        query,
         params={"u": username, "p": hashed},
-        ttl=0 # Don't cache login checks!
-        )
+        ttl=0 
+    )
+    
     if not result.empty:
-        # Return a dictionary of the user's status
-        user_dict = result.iloc[0].to_dict()
-        #print("--- TERMINAL DEBUG: USER DATA ---")
-        #print(user_dict) 
-        #print("---------------------")
-        return user_dict
+        # This returns the is_admin and is_approved columns as a dictionary
+        return result.iloc[0].to_dict()
     return None
 
 def get_user_progress(username):
@@ -126,6 +132,7 @@ def log_final_activity():
     """Logs the stay duration for the current page before the session ends."""
     if "start_time" in st.session_state and "current_page" in st.session_state:
         duration = round(time.time() - st.session_state.start_time, 2)
+        print(duration  )
         user = st.session_state.get("user_id", "Anonymous")   
 
 # Only log if they were actually on the page for a moment

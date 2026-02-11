@@ -61,8 +61,7 @@ if st.session_state.get("current_page") not in pages_map:
         st.session_state.current_page = list(pages_map.keys())[0]
 if st.session_state.user_id:
     sticky_navbar()
-
-
+    
 st.session_state.pages_map = pages_map
 # ---------------- 7. Navigation widget ----------------
 if not allowed_pages:

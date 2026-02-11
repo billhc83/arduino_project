@@ -17,6 +17,7 @@ resistor = Image.open("graphics/resistor.png")
 button = Image.open("graphics/button.png")
 jump = Image.open("graphics/jumper.jpg")
 labeled_breadboard = Image.open("graphics/labled_breadboard.jpg")
+photoresistor = Image.open("graphics/photoresistor.jpeg")
 
 st.title("🚀GETTING STARTED")
 st.markdown("""
@@ -28,6 +29,7 @@ led1, led2 = st.columns(2)
 res1, res2 = st.columns(2)
 but1, but2 = st.columns(2)
 jump1, jump2 = st.columns(2)
+photo1, photo2 = st.columns(2)
 
 with uno1:
     st.markdown("""
@@ -121,6 +123,27 @@ with but2:
     st.markdown("---")
     st.image(button, width= 200, caption="Button")
 
+with photo1:
+    st.markdown("""
+    ---
+                
+    # Photoresistor
+    
+    A Photoresistor (also called an LDR) is like a "Magic Eye" for your projects! It helps your circuit "see" the world around it. 🌎✨
+
+    Light Sensor: It is a special part that can tell how much light is in the room. 💡
+    
+    The Bright Rule: When you shine a bright light on it, it lets electricity zoom through fast! 🏃‍♂️💨
+    
+    The Dark Rule: When it is dark, it acts like a wall and makes it very hard for electricity to pass through. 🧱🌑
+    
+    Real-World Helper: These are the same parts used in streetlights to help them turn on "automagically" when the sun goes down! 🌅➡️🌃
+
+                """)
+with photo2:
+    st.markdown("---")
+    st.image(photoresistor, width=200, caption="Photoresistor")
+    
 with jump1:
     st.markdown("""
     ---

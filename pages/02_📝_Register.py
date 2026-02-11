@@ -32,13 +32,25 @@ with st.form("registration_form"):
                 try:
                     hashed = hash_password(new_pass)
                     with conn.session as s:
+                        # First, add the profile to the public table
                         s.execute(
                             text(
-                                "INSERT INTO users (username, password, is_approved) "
-                                "VALUES (:u, :p, :a)"
+                                "INSERT INTO public.users (username, is_approved, is_admin) "
+                                "VALUES (:u, :a, :adm)"
                             ),
-                            {"u": new_user, "p": hashed, "a": False}
+                            {"u": new_user, "a": False, "adm": False}
                         )
+                        
+                        # Second, add the password to the private table
+                        s.execute(
+                            text(
+                                "INSERT INTO private.user_creds (username, password) "
+                                "VALUES (:u, :p)"
+                            ),
+                            {"u": new_user, "p": hashed}
+                        )
+                        
+                        # Commit both at once so it's "all or nothing"
                         s.commit()
                     
                     # 4. Notify Discord
