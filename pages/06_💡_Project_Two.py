@@ -5,7 +5,7 @@ from utils.utils import hover_zoom_at_cursor
 from PIL import Image
 from utils.utils import get_automated_pages
 
-circuit_layout = Image.open("graphics/circuit_layout.png")
+circuit_layout = Image.open("graphics/project_one_circuit.png")
 
 st.title("Project Two - BLINKING BEACON💡 💡")
 st.markdown("""
@@ -46,80 +46,94 @@ Think of it like a water tap. `HIGH` is turning the water on, and `LOW` is turni
 
 ---
 """)
-
-circuit1, circuit2 = st.columns(2, vertical_alignment="bottom")
-
-with circuit1:
    
-   st.markdown("""  
+st.markdown("""
+## 🔌 Build the Circuit
 
-    ## 🔌 Build the circuit
-    *(If you still have Project 1 built, you are already ready!)*
+*(If you still have Project 1 built, you are already ready!)*
 
-    ###### What parts do I need?
-                
-    🟦 Arduino UNO (The blue computer brain!)
-                
-    ⚡ Resistor (The electricity speed-bump!)
+###### What parts do I need?
 
-    ✨ Any color LED (The tiny glowing light!)
+🟦 **Arduino UNO** (The Lighthouse Keeper’s Controller!)  
+This is the brain inside the lighthouse that decides when the beacon turns on and starts flashing.
 
-    〰️ Wires (The robot's veins!)
+⚡ **Resistor** (The Power Protector!)  
+Keeps the electricity flowing safely so the beacon shines smoothly.
 
-    ## 🧱 Breadboard layout
+✨ **LED (Any Color)** (The Lighthouse Beacon!)  
+This is the bright light that flashes to guide ships safely through the night.
+
+〰️ **Jumper Wires** (The Lighthouse Wiring!)  
+Carry power and signals through the lighthouse, connecting everything together.
+""")
+
+
+hover_zoom_at_cursor(circuit_layout, height=300, zoom_factor=2.0, key="circuit1")
+
+st.info("👇 Need help? Click below for detailed instructions")
+
+with st.expander("📋 Step-by-step wiring guide"):
+
+    st.markdown("""  
+                   
+    ## 🧱 Breadboard layout (exact wire & part placement)
 
     ##### :red[Red] LED
-      * Long leg: row 6 column e
-      * Short leg: row 6 column f
 
-    ##### Resistor 330 Ohms: 
-      * row 6 column h, row 10 column h
+      * Long leg: row 12 column e
+
+      * Short leg: row 1 column e
+
+    ##### Resistor 330 or 220 Ohms: 
+      
+     * row 11 column d, row 7 column d
 
     ##### 2 Wires:   
-    1:  **Pin 8**, row 6 column a
-    
-    2:  **Pin GND**, row 10 column f
+        
+    1:  Arduino pin 8, row 12 column a
 
-    ---
+    2:  Arduino pin GND, row 7 column e
+
     """)
-   with circuit2:
-    hover_zoom_at_cursor(circuit_layout, width=300, height=300, zoom_factor=2.0, key="circuit1")
-    st.markdown("---")
+code1, code2 = st.columns([2.5,1.5])
 
-st.markdown("""
+with code1:
+        
+    st.markdown("""
 
-## Code 
-            
+    ## Code 
+                
+                """)
+
+    st.code("""
+    void setup() {
+      pinMode(8, OUTPUT); 
+    }
+
+   
+    void loop() {
+      digitalWrite(8, HIGH); 
+      delay(500);  
+      
+      digitalWrite(8, LOW);  
+      delay(500); 
+    }
             """)
 
-st.code("""
-// This part runs just ONCE when you turn it on
-void setup() {
-  // Tell the brain Pin 8 is a mouth (Output)
-  pinMode(8, OUTPUT); 
-}
+with code2:
+  st.markdown("""### 🌟 Pro-Tips!
 
-// This part runs OVER and OVER forever!
-void loop() {
-  digitalWrite(8, HIGH); // Light ON! 💡
-  delay(500);            // Wait for half a second ⏱️
-  
-  digitalWrite(8, LOW);  // Light OFF! 🌑
-  delay(500);            // Wait for half a second ⏱️
-}
-        """)
-st.success("### 🌟 Pro-Tips!")
-
-col1, col2 = st.columns(2)
-
-with col1:
-    st.markdown("**Delay()**")
-    st.write("In Arduino land, 1,000 equals 1 second. If you want the light to stay off for a really long time, what number would you use for 5 seconds?")
-
-with col2:
-    st.markdown("**The Semicolon** 🧐")
-    st.write("Don't forget the **;** at the end of your code lines!")
-
+  **Delay()**
+               
+  In Arduino land, 1,000 equals 1 second. If you want the light to stay off for a really long time, what number would you use for 5 seconds?
+    
+  **The Semicolon** 🧐
+    
+  Don't forget the **;** at the end of your code lines! It tells the brain to move on to the next thought!!!
+            
+""")
+st.info("""
+    Remember use the copy button to grab your code and Ctrl + v to put it down in the Arduino IDE""")
 st.info("🚀Try changing the number inside `delay(500)` to `delay(100)`. Does your robot blink faster or slower?")
 
 from utils.steps import complete_step_and_continue

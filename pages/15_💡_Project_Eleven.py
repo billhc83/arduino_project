@@ -18,67 +18,70 @@ Before we make our car "Smart," we need to build the **Manual Dash**. In this ve
 
 You are going to engineer a **Headlight Switch**, a **Brake Pedal**, and a **Horn Button**! You are the pilot, and the car does exactly what your fingers tell it to do. 🕹️✨
 """)
+hover_zoom_at_cursor(manual_car_layout, height=300, zoom_factor=2.0, key="manual_car_zoom")
 
-# --- CIRCUIT SECTION ---
-circuit_col1, circuit_col2 = st.columns(2, vertical_alignment="center")
+st.info("👇 Need help? Click below for detailed instructions")
 
-with circuit_col1:
+with st.expander("📋 Step-by-step wiring guide"):
     st.markdown("""
 ## 🧱 The Manual Dash Blueprint
 *We are using the **Magic 5** coordinates and the **- Rail** to keep our workshop tidy!*
 
 ##### 💡 :white[Headlights] (LED)
-*   **Long leg:** row 1 column e
-*   **Short leg:** row 1 column f
+*   **Long leg:** row 30 column e
+*   **Short leg:** row 29 column e
 
 ##### 💡 :red[Brake Lights] (LED)
-*   **Long leg:** row 25 column e
-*   **Short leg:** row 25 column f
+*   **Long leg:** row 1 column e
+*   **Short leg:** row 2 column e
 
 ##### 🔊 :blue[The Horn] (Buzzer)
-*   **Long leg (+):** row 20 column e
-*   **Short leg (-):** row 20 column f
+*   **Long leg (+):** row 18 column e
+*   **Short leg (-):** row 18 column f
 
 ##### 🔑 :green[Headlight Switch] (Slide Switch)
-*   **Center Pin:** row 5 column f
-*   **Side Pin:** row 6 column f
+*   **Center Pin:** row 23 column e
+*   **Side Pin:** row 24 column e
 
 ##### 🔘 :orange[Brake Pedal] (Button)
-*   **Leg 1:** row 15 column e
-*   **Leg 2:** row 15 column f
+*   **Leg 1:** row 10 column e
+*   **Leg 2:** row 8 column e
+*   **Leg 1:** row 10 column f
+*   **Leg 2:** row 8 column f
 
 ##### 🔘 :orange[Horn Button] (Button)
-*   **Leg 1:** row 10 column e
-*   **Leg 2:** row 10 column f
+*   **Leg 1:** row 14 column e
+*   **Leg 2:** row 12 column e
+*   **Leg 1:** row 14 column f
+*   **Leg 2:** row 12 column f
 
 ##### ⚡ Resistors (220 Ohm x 2): 
-*   **Resistor 1:** row 1 column h ➡️ **- rail** (Ground Rail)
-*   **Resistor 2:** row 25 column h ➡️ **- rail** (Ground Rail)
+*   **Resistor 1:** row 2 column d ➡️ row 6 column d
+*   **Resistor 2:** row 29 column d ➡️ row 25 column d
 
 ##### 🧶 Wiring the Manual Dash
-
-1.  **Pin GND** ➡️ **- rail / Ground Rail** (The Main Drain) 🚰
-2.  **Pin 13** ➡️ **row 1 column a** (Headlight Power)
-3.  **Pin 12** ➡️ **row 25 column a** (Brake Power)
-4.  **Pin 8** ➡️ **row 20 column a** (Horn Power)
-5.  **Pin 2** ➡️ **row 6 column j** (Switch Signal)
-6.  **Pin 3** ➡️ **row 15 column j** (Brake Signal)
-7.  **Pin 4** ➡️ **row 10 column j** (Horn Signal)
-8.  **Pin 5V** ➡️ **+ rail** (Switch Power)
-9.  **row 15 column a ➡️ **+ rail** (Brake Power)
-10. **row 10 column a** ➡️ **+ rail** (Horn Power)
-11. **row 20 column j** ➡️ **- rail** (Buzzer Drain)
+                
+**We need both ground rails this time add a wire from a GND pin to each - rail
+1.  **Pin GND** ➡️ **- rail / Ground Rail** X 2 (The Two Main Drains) 🚰 
+2.  **Pin 13** ➡️ **row 30 column a** (Headlight Power)
+3.  **Pin 12** ➡️ **row 1 column d** (Brake Power)
+4.  **Pin 8** ➡️ **row 18 column c** (Horn Power)
+5.  **Pin 2** ➡️ **row 23 column a** (Switch Signal)
+6.  **Pin 3** ➡️ **row 8 column a** (Brake Signal)
+7.  **Pin 4** ➡️ **row 12 column b** (Horn Signal)
+9.  **row 10 column j ➡️ **- rail** (Brake Drain)
+10. **row 14 column j** ➡️ **- rail** (Horn Drain)
+11. **row 18 column j** ➡️ **- rail** (Buzzer Drain)
+12.  **- rail** ➡️ **row 6 column a** (Brake Light Drain)
+13.  **- rail** ➡️ **row 24 column a** (Headlight Switch Drain)
+14.  **- rail** ➡️ **row 25 column c** (Brake Signal)
                 """)
-
-with circuit_col2:
-    st.info("""
+st.info("""
 🧠 **Mechanic's Secret:** 
 In this project, the Arduino is acting like a **Messenger**. 
 It waits for you to press a button, and then it sends a "Go" signal to the light or buzzer. 
 Every action needs **YOU**! 🕹️➡️💡
 """)
-    hover_zoom_at_cursor(manual_car_layout, width=300, height=300, zoom_factor=2.0, key="manual_car_zoom")
-
 # --- CODE SECTION ---
 code_col1, code_col2 = st.columns([2.5,1.5])
 
@@ -90,9 +93,9 @@ void setup() {
   pinMode(12, OUTPUT); // Brakes
   pinMode(8, OUTPUT);  // Horn
   
-  pinMode(2, INPUT);   // Headlight Switch
-  pinMode(3, INPUT);   // Brake Button
-  pinMode(4, INPUT);   // Horn Button
+  pinMode(2, INPUT_PULLUP);   // Headlight Switch
+  pinMode(3, INPUT_PULLUP);   // Brake Button
+  pinMode(4, INPUT_PULLUP);   // Horn Button
   
   Serial.begin(9600);
   Serial.println("--- MANUAL DASH ACTIVE ---");
@@ -100,7 +103,7 @@ void setup() {
 
 void loop() {
   // 1. Check the Headlight Switch
-  if (digitalRead(2) == HIGH) {
+  if (digitalRead(2) == LOW) {
     digitalWrite(13, HIGH);
     Serial.println("Manual: Headlights ON 🔦");
   } else {
@@ -108,7 +111,7 @@ void loop() {
   }
 
   // 2. Check the Brake Pedal
-  if (digitalRead(3) == HIGH) {
+  if (digitalRead(3) == LOW) {
     digitalWrite(12, HIGH);
     Serial.println("Manual: Braking! 🛑");
   } else {
@@ -116,7 +119,7 @@ void loop() {
   }
 
   // 3. Check the Horn Button
-  if (digitalRead(4) == HIGH) {
+  if (digitalRead(4) == LOW) {
     tone(8, 400);
     Serial.println("Manual: BEEP BEEP! 🔊");
   } else {

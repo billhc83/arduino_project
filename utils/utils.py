@@ -113,7 +113,7 @@ import streamlit as st
 from data_base import save_only, save_and_unlock  # your DB functions
 from utils.steps import complete_step_and_continue
 
-def hover_zoom_at_cursor(image, width=800, height=600, zoom_factor=2.5, key="unique"):
+def hover_zoom_at_cursor(image, height=600, zoom_factor=2.5, key="unique"):
     # Convert PIL image to base64
     buffered = BytesIO()
     image.save(buffered, format="PNG")
@@ -129,7 +129,7 @@ def hover_zoom_at_cursor(image, width=800, height=600, zoom_factor=2.5, key="uni
 
     <style>
     #{container_id} {{
-        width: {width}px;
+        width: 100%;
         height: {height}px;
         overflow: hidden;
         border: 1px solid #ccc;

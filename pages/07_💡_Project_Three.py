@@ -10,52 +10,80 @@ st.title("🧪 Project 3 – Mad Scientist Button Machine")
 
 st.markdown("""
 Welcome to the Mad Scientist Laboratory! 🧠⚡
+            
+Strange machines are buzzing… wires are glowing… and something amazing is about to happen!
 
-Press the button 👉  
-The light turns ON 💡  
+In this experiment, YOU are the mad scientist 😈
+Your job is to control a powerful energy crystal using a button.
 
-Let go…  
-The light turns OFF 😴  
+👉 Press the button
+The crystal wakes up and the light turns ON 💡
 
-Mwahahaha! You control the experiment! 😈
+✋ Let go of the button
+The crystal goes back to sleep and the light turns OFF 😴
+
+This experiment teaches the machine to listen to you.
+Press means ON.
+Release means OFF.
+
+Mwahahaha!
+You are in control of the experiment! 🧪⚡
 """)
 
-st.markdown("## 🧭 Lab Wiring Map")
+st.markdown("""
+## 🔌 Build the Circuit
 
-# ---------- CIRCUIT COLUMNS ----------
-circuit1, circuit2 = st.columns(2, vertical_alignment= "center")
+###### What parts do I need?
 
-with circuit1:
+🟦 **Arduino UNO** (The Mad Scientist’s Super Brain!)  
+The powerful brain of the lab that controls the experiment and watches for button presses.
+
+⚡ **Resistor** (The Electricity Tamer!)  
+Slows the wild electricity down so it doesn’t escape or fry the experiment!
+
+✨ **LED (Any Color)** (The Energy Crystal!)  
+This crystal glows with mysterious power when the experiment is activated.
+
+〰️ **Jumper Wires** (The Crackling Lab Cables!)  
+Carry energy between parts as the experiment comes to life.
+
+🔘 **Push Button** (The Experiment Trigger!)  
+Press and hold to activate the energy crystal — release it and the power shuts down!
+""")
+
+
+hover_zoom_at_cursor(circuit_layout, height=300, zoom_factor=2.0, key="circuit1")
+
+st.info("👇 Need help? Click below for detailed instructions")
+
+with st.expander("📋 Step-by-step wiring guide"):
+
     st.markdown("""
  **💡 LED (Energy Crystal)**
 
-- Long leg → row 6, column **e**  
-- Short leg → row 6, column **f**  
-- Resistor 330 Ohms → row 6 **h** → row 10 **h**
+- Long leg → row 12, column **e**  
+- Short leg → row 11, column **e**
+                  
+- Resistor 330 or 220 Ohms → row 11 **d** → row 7 **d**
 
 **Wires**
 
-- Arduino **pin 8** → row 6 **a**  
-- Wire from **row 10 f** → negative (–) rail
+- Arduino **pin 8** → row 12 **a**  
+- Wire from **row 7 e** → negative (–) rail
 
 ---
 
 **🔘 Button (Trigger Switch)**
 
-- Button leg → row 14 **e**  
-- Button leg → row 14 **f**
+- Button leg → row 18 **e**  
+- Button leg → row 18 **f**
+- Button leg → row 20 **e**  
+- Button leg → row 20 **f**
 
 **Wires**
 
-- Arduino **pin 2** → row 14 **a**  
-- Wire from row 14 **j** → negative (–) rail""")
-
-with circuit2:
-
-        hover_zoom_at_cursor(circuit_layout, width=300, height=300, zoom_factor=2.0, key="circuit1")
-
-
-# ---------- CODE COLUMNS ----------
+- Arduino **pin 2** → row 18 **a**  
+- Wire from row 20 **j** → negative (–) rail""")
 
 
 code1, code2 = st.columns(2)

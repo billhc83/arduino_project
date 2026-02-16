@@ -17,11 +17,34 @@ You must build an automated **Perimeter Alarm**. It uses a legendary **Dragon's 
 
 Grab your tools, Master Engineer! We need to fit all our defenses onto the board before sunset! ⚔️💎
 """)
+st.markdown("""
+### 🗝️🕯️ The Shadow Thief Detection Blueprint
 
-# --- CIRCUIT SECTION ---
-circuit_col1, circuit_col2 = st.columns(2, vertical_alignment="center")
+**Arcane Components (a.k.a. normal electronics):**
 
-with circuit_col1:
+**1× Photoresistor** (The Shadow Watcher) 👁️
+Constantly monitors the dungeon light. When a thief blocks the light, it knows.
+
+**1× LED** (The Alarm Rune) 🔴
+Flashes the instant a shadow crosses the warded path.
+
+**1× 220-ohm Resistor (Rune Stabilizer) ⚡**
+Protects the alarm rune from overload.
+
+**1× 10k-ohm Resistor (Shadow Reference Sigil) ⚖️**
+Sets the light threshold so only real intrusions trigger the trap.
+
+**1× Buzzer (The Silent-Breaker) 🔊**
+Emits a sharp warning tone — stealth instantly ruined.
+""")
+
+hover_zoom_at_cursor(castle_layout, height=300, zoom_factor=2.0, key="castle_zoom")
+
+
+st.info("👇 Need help? Click below for detailed instructions")
+
+with st.expander("📋 Step-by-step wiring guide"):
+
     st.markdown("""
 ## 🧱 Breadboard Layout
 
@@ -57,13 +80,12 @@ with circuit_col1:
 7.  **- rail** ➡️ **row 10 column j** (Roar Ground)
                 """)
 
-with circuit_col2:
-    st.info("""
+
+st.info("""
 🧠 **Dungeon Master's Trick:** 
 Our breadboard has a "valley" in the middle. We put the **Buzzer** on the right side (columns f to j) to make more room! Both sides work exactly the same way. ⛰️🚶‍♂️
 """)
-    hover_zoom_at_cursor(castle_layout, width=300, height=300, zoom_factor=2.0, key="castle_zoom")
-
+    
 # --- CODE SECTION ---
 code_col1, code_col2 = st.columns(2)
 

@@ -6,7 +6,7 @@ from utils.utils import hover_zoom_at_cursor, complete_step_and_continue, get_au
 # (Optionally add st.set_page_config here if not in main.py)
 
 # --- ASSETS ---
-# workshop_layout = Image.open("graphics/power_slot_build.png")
+workshop_layout = Image.open("graphics/project_one_circuit.png")
 
 # --- HEADER ---
 st.title("🛠️ Project 9 - The Universal Power Slot")
@@ -25,81 +25,96 @@ We have three futuristic battery types and one very delicious lunch to test:
 Let's see what happens when we try to power our machine with a sandwich!
 """)
 
-# --- CIRCUIT SECTION ---
-circuit_col1, circuit_col2 = st.columns(2, vertical_alignment="center")
 
-with circuit_col1:
+
+hover_zoom_at_cursor(workshop_layout, height=300, zoom_factor=2.0, key="power_slot_zoom")
+
+
+st.info("👇 Need help? Click below for detailed instructions")
+
+with st.expander("📋 Step-by-step wiring guide"):
+    
     st.markdown("""
-## 🧱 The Power Core Layout
+  ## 🧱 The Power Core Layout
 
-##### 💡 :red[System Status LED]
-*   **Long leg:** row 10 column e
-*   **Short leg:** row 7 column e
+  ##### 💡 :red[System Status LED]
+  *   **Long leg:** row 12 column e
+  *   **Short leg:** row 11 column e
 
-##### ⚡ Resistor (220 Ohm - Red, Red, Brown): 
-*   **Leg 1:** row 7 column c
-*   **Leg 2:** **- rail** (Ground Rail)
+  ##### ⚡ Resistor (220 Ohm - Red, Red, Brown): 
+  *   **Leg 1:** row 11 column d
+  *   **Leg 2:** row 7 column d
 
----
+  ## 🧶 Wiring the Core
 
-## 🧶 Wiring the Core
+  1.  **Pin GND** ➡️ **- rail / Ground Rail** (The Main Drain) 🚰
+  2.  **Pin 13** ➡️ **row 10 column a** (Power for the LED)
 
-1.  **Pin GND** ➡️ **- rail / Ground Rail** (The Main Drain) 🚰
-2.  **Pin 13** ➡️ **row 10 column a** (Power for the LED)
-
----
-*Tip: Ensure your Resistor reaches all the way to the blue Ground Rail!* 🔌
+                
+  *Tip: Ensure your Resistor reaches all the way to the blue Ground Rail!* 🔌
                 """)
 
-with circuit_col2:
-    st.info("""
+st.info("""
 🧠 **Engineer's Data Guide:**
 *   **`int` Slots:** These are for **Numbers** (like Battery Power). 🔢
 *   **`String` Slots:** These are for **Words** (like the name of a snack). 📝
 
 If you try to put a **String** in an **int** slot, the machine will crash!
 """)
-    # hover_zoom_at_cursor(workshop_layout, width=300, height=300, zoom_factor=2.0, key="power_slot_zoom")
-
 # --- CODE SECTION ---
-code_col1, code_col2 = st.columns(2)
+code_col1, code_col2 = st.columns([2.5,1.5])
 
 with code_col1:
     st.markdown("## 📜 The Inspection Script")
     st.code("""
-// --- THE SLOTS ---
-int batterySlot = 0;             // Holds Battery Power (Numbers)
-String snackSlot = "Empty";      // Holds Workshop Snacks (Words)
+// 📦 This is our Universal Power Slot!
+// Remove the // from the one you want to test and upload:
+
+// String powerSlot = "Mega-Glow Moon-Milk"; 
+// String powerSlot = "Sparky-Squirrel Static";
+// String powerSlot = "Zappy-Zucchini Juice";
+String powerSlot = "Crusty Club Sandwich"; 
+
+int currentEnergy = 0; // This starts at 0
 
 void setup() {
   pinMode(13, OUTPUT);
   Serial.begin(9600);
-  Serial.println("--- INITIALIZING POWER PORT ---");
+  Serial.println("--- SCANNING POWER SLOT ---");
 }
 
 void loop() {
-  // --- THE INSPECTION ---
+  // 🔍 THE INSPECTION: Matching names to numbers!
   
-  if (batterySlot > 0) {
-    // SUCCESS: We found electricity!
-    digitalWrite(13, HIGH);
-    Serial.print("VOLTAGE DETECTED: ");
-    Serial.println(batterySlot);
-    Serial.println("SYSTEM ONLINE! 🔋✨");
+  if (powerSlot == "Mega-Glow Moon-Milk") {
+    currentEnergy = 100; // 🥛 Huge Power!
   } 
-  else if (snackSlot == "Crusty Club Sandwich") {
-    // ERROR: Lunch is in the way!
-    digitalWrite(13, LOW);
-    Serial.println("❌ ALERT: Sandwich detected in Power Port!");
-    Serial.println("CAUTION: Do not bridge terminals with ham. 🥪");
+  else if (powerSlot == "Sparky-Squirrel Static") {
+    currentEnergy = 50;  // 🐿️ Medium Power!
+  }
+  else if (powerSlot == "Zappy-Zucchini Juice") {
+    currentEnergy = 10;  // 🥒 Tiny Power!
   }
   else {
-    // EMPTY: Nothing found
+    currentEnergy = 0;   // 🥪 No Power in a Sandwich!
+  }
+
+  // 💡 EXECUTION: Use the Energy we found!
+  if (currentEnergy > 0) {
+    digitalWrite(13, HIGH);
+    Serial.print("SUCCESS: Found ");
+    Serial.print(powerSlot);
+    Serial.print("! Energy Level: ");
+    Serial.println(currentEnergy);
+  } 
+  else {
     digitalWrite(13, LOW);
-    Serial.println("... System Waiting for Part ... 💤");
+    Serial.print("⚠️ ERROR: Cannot run on ");
+    Serial.println(powerSlot);
+    Serial.println("Engineer Note: Wrong part in slot! ❌");
   }
   
-  delay(2000);
+  delay(3000);
 }
 """, language="cpp")
 

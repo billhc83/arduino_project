@@ -21,45 +21,63 @@ We are going to use **Variables** as **Security Locks**. In your code, a variabl
 Ready to secure the base? Let's get to work! ⚔️🛡️
 """)
 
-# --- CIRCUIT SECTION ---
-circuit_col1, circuit_col2 = st.columns(2, vertical_alignment="center")
+st.markdown("""
+## 🛡️ Build the Top Secret Spy Vault Security Lock
 
-with circuit_col1:
+###### What parts do I need?
+
+🟦 **Arduino UNO** (The Mission Control Brain!)  
+The secret agent computer that checks the key card switches and controls the vault alert light.
+
+🔘 **2 Switches** (The Key Card Readers!)  
+Both must be activated at the same time to unlock the vault — only the real agents know the code.
+
+✨ **LED** (The Vault Indicator!)  
+Lights up when the secret lock is successfully activated — mission accomplished!
+
+⚡ **Resistor** (The Electricity Guard!)  
+Keeps the LED safe by controlling the current so nothing gets fried.
+""")
+hover_zoom_at_cursor(spy_vault_layout, height=300, zoom_factor=2.0, key="vault_zoom")
+
+st.info("👇 Need help? Click below for detailed instructions")
+
+with st.expander("📋 Step-by-step wiring guide"):
     st.markdown("""
 ## 🧱 The Vault Blueprint
 *We are using our **Magic 5** coordinates and the **- Rail** to keep our spy gear organized!*
 
 ##### 🔑 :green[Key Card 1] (Switch)
-*   **Center Pin:** row 5 column e
-*   **Side Pin:** row 4 column e
+*   **Center Pin:** row 24 column e
+*   **Side Pin:** row 25 column e
 
 ##### 🔑 :green[Key Card 2] (Switch)
-*   **Center Pin:** row 15 column e
-*   **Side Pin:** row 14 column e
+*   **Center Pin:** row 17 column e
+*   **Side Pin:** row 18 column e
 
 ##### 💡 :red[Vault Status Light] (LED)
-*   **Long leg:** row 25 column e
-*   **Short leg:** row 22 column e
+*   **Long leg:** row 12 column e
+*   **Short leg:** row 11 column e
 
 ##### ⚡ Resistor (220 Ohm - Red, Red, Brown): 
-*   **Leg 1:** row 22 column c
-*   **Leg 2:** **- rail** (Ground Rail)
+*   **Leg 1:** row 11 column d
+*   **Leg 2:** row 7 column d
 
 ---
 
-## 🧶 Wiring the Console
+##### 🧶 Wiring the Console
 
-1.  **Pin GND** ➡️ **- rail / Ground Rail** (The Main Drain) 🚰
-2.  **Pin 5V** ➡️  **+ rail / Power Rail** 5v Power
-    **+ rail** ➡️  **row 4 column a** (Power for Key 1)
-3.  **+ rail** ➡️ **row 14 column a** (Power for Key 2)
-4.  **Pin 2** ➡️ **row 5 column a** (Signal for Key 1)
-5.  **Pin 3** ➡️ **row 15 column a** (Signal for Key 2)
-6.  **Pin 13** ➡️ **row 25 column a** (Power for Vault Light)
+1.  **Pin GND** ➡️ **row 7 column e 🚰
+2.  *Pin GND** ➡️ **- rail/ ground rail🚰
+    **- rail** ➡️  **row 25 column d** (Power for Key 1)
+3.  **- rail** ➡️ **row 18 column d** (Power for Key 2)
+4.  **Pin 2** ➡️ **row 24 column a** (Signal for Key 1)
+5.  **Pin 3** ➡️ **row 17 column a** (Signal for Key 2)
+6.  **Pin 13** ➡️ **row 12 column a** (Power for Vault Light)
                 """)
 
-with circuit_col2:
-    st.info("""
+
+st.info("""
 🧠 **Spy Logic Secret:**
 We are using **Variables** to store a "Status." 
 - `boltA = 0` means the first lock is stuck.
@@ -67,7 +85,7 @@ We are using **Variables** to store a "Status."
 
 The computer checks these "Status Pockets" to see if it's safe to open the door.
 """)
-    hover_zoom_at_cursor(spy_vault_layout, width=300, height=300, zoom_factor=2.0, key="vault_zoom")
+    
 
 # --- CODE SECTION ---
 code_col1, code_col2 = st.columns([2.75,1.25])
@@ -80,8 +98,8 @@ int LockA = 0;
 int LockB = 0;
 
 void setup() {
-  pinMode(2, INPUT);
-  pinMode(3, INPUT);
+  pinMode(2, INPUT_PULLUP);
+  pinMode(3, INPUT_PULLUP);
   pinMode(13, OUTPUT);
   Serial.begin(9600);
   Serial.println("--- VAULT SYSTEM ARMED ---");

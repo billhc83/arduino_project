@@ -5,7 +5,7 @@ from PIL import Image
 from utils.utils import hover_zoom_at_cursor
 from utils.utils import complete_step_and_continue, get_automated_pages
 
-circuit_layout = Image.open("graphics/circuit_layout.png")
+circuit_layout = Image.open("graphics/project_one_circuit.png")
 
 st.title("Project One - Lights On! 💡 💡 💡")
 st.divider()
@@ -74,81 +74,81 @@ Arduino code is called a "Sketch." It is like a recipe or a list of chores that 
 
 📋 Then, I do it all over again! (Repeating the rules)
             
----
             """)
-
-circuit1, circuit2 = st.columns(2, vertical_alignment="bottom")
-
-with circuit1:
-   
-   st.markdown("""  
-
-    ## 🔌 Build the circuit
+st.title("""
+         
+  🔌 Build the circuit
 
     ###### What parts do I need?
                 
-    🟦 Arduino UNO (It’s the blue computer brain!)
+    🟦 Arduino UNO (It’s the computer brain!)
                 
     ⚡ Resistor (It’s the electricity speed-bump!)
 
     ✨ Any color LED (It’s the tiny glowing light!)
 
     〰️ Wires (They are the robot's veins and nerves!)
+   """)
+hover_zoom_at_cursor(circuit_layout, zoom_factor=2.0, key="circuit1")
+st.info("👇 Need help? Click below for detailed instructions")
 
+with st.expander("📋 Step-by-step wiring guide"):
+       st.markdown("""  
+                   
     ## 🧱 Breadboard layout (exact wire & part placement)
 
     ##### :red[Red] LED
 
-      * Long leg: row 6 column e
+      * Long leg: row 12 column e
 
-      * Short leg: row 6 column f
+      * Short leg: row 1 column e
 
-    ##### Resistor 330 Ohms: 
+    ##### Resistor 330 or 220 Ohms: 
       
-      row 6 column h, row 10 column h
+     * row 11 column d, row 7 column d
 
     ##### 2 Wires:   
         
-    1:  Arduino pin 8, row 6 column a
+    1:  Arduino pin 8, row 12 column a
 
-    2:  Arduino pin GND, row 10 column f
-
-    ---
+    2:  Arduino pin GND, row 7 column e
 
     """)
-    
-with circuit2:
-    hover_zoom_at_cursor(circuit_layout, width=300, height=300, zoom_factor=2.0, key="circuit1")
-    st.markdown("---")
+code1, code2 = st.columns([2.5,1.5])
 
-st.markdown("""
+with code1:
+     
+    st.markdown("""
 
-## Code 
-            
+    ## Code 
+                
+                """)
+
+    st.code("""
+    void setup() {
+      pinMode(8, OUTPUT);
+    }
+
+
+    void loop() {
+      digitalWrite(8, HIGH);
+    }
             """)
+    
+with code2:
+     
+    st.markdown("""
+    ### 🧩 What this code means
 
-st.code("""
-void setup() {
-  pinMode(8, OUTPUT);
-}
+    setup() → runs once when Arduino wakes up 🌅
 
+    pinMode(8, OUTPUT) → pin 8 sends power out 🗲
 
-void loop() {
-  digitalWrite(8, HIGH);
-}
-        """)
+    loop() → runs forever 🔁
 
-st.markdown("""
-### 🧩 What this code means
-
-setup() → runs once when Arduino wakes up 🌅
-
-pinMode(8, OUTPUT) → pin 8 sends power out 🗲
-
-loop() → runs forever 🔁
-
-digitalWrite(8, HIGH) → turns the LED on 💡
-            
+    digitalWrite(8, HIGH) → turns the LED on 💡
+            """)
+st.info("""
 ## How to Move Your Code🔌
             
 #### Copy it: 📋 
@@ -171,7 +171,7 @@ Click the empty white page. Hold the Ctrl key and tap V. Your code will pop up!
 Plug your board into the computer with the cable. Click the Arrow button (➔) at the top. When it says "Done," your code is ready!
 """)
 
-st.info("""
+st.write("""
 The Magic Blue Brain: 🟦 "If your light isn't turning on, check the green light on the Arduino board itself. If that's not on, your 'Brain' isn't getting power! Check your USB cable."
 
 Color Matching: 🌈 "Wires come in different colors, but inside, they are all the same! You can use a yellow wire for a red light, and it will still work. It's like wearing a blue shirt or a red shirt—you're still you!

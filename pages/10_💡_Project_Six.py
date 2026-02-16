@@ -11,17 +11,53 @@ circuit_layout = Image.open("graphics/project_six_circuit.png")
 st.title("🤿 Project 6 - The Deep Sea Explorer! 🐙")
 
 st.markdown("""
-Welcome aboard the **S.S. Arduino**! 🚢⚓ 
+🚢 Submarine Light Sensor Mission
 
-We are diving into the mysterious **Midnight Zone** of the ocean. Down here, the sun's rays can't reach! 🌊🌑
+Welcome aboard the S.S. Arduino! 🚢⚓
+Today, you are part of a brave submarine crew going deep into the ocean.
 
-We will use our **Submarine Sensor** (the Photoresistor) to tell us if we are safe at the surface or if we have reached the dark, spooky home of the **Giant Squid**! 🦑✨
+We are diving into the Midnight Zone, a dark place far below the surface. 🌊🌑
+Down here, sunlight cannot reach, and it gets darker and darker as we go.
+
+Our submarine has a special tool called a Submarine Sensor 👁️‍🗨️
+This sensor can “see” how bright or dark it is around us.
+
+If it is bright, we know we are near the surface and safe.
+If it is dark, we know we are deep in the ocean… maybe even near the spooky home of the Giant Squid! 🦑✨
+
+Your mission is to:
+
+Watch the light sensor
+
+Read the data on the screen
+
+Discover how deep the submarine has traveled
+
+Lights on, crew!
+Let’s dive! 🌊⚓
+""")
+st.markdown("""
+## 🔌 Build the Circuit
+
+###### What parts do I need?
+
+🟦 **Arduino UNO** (The Submarine’s Brain!)  
+This is the captain of the submarine! It thinks, makes decisions, and reports light levels back to mission control using the serial monitor.
+
+〰️ **Jumper Wires** (The Submarine’s Nerve Cables!)  
+These carry messages and power around the submarine so all the parts can talk to each other.
+
+👁️‍🗨️ **Photoresistor (LDR)** (The Submarine’s Periscope Eye!)  
+This eye looks around underwater and tells the submarine how bright it is outside.
+
+⚡ **Resistor** (The Current Controller!)  
+Slows the electricity down so the periscope eye gives smooth, accurate readings instead of going wild!
 """)
 
-# --- CIRCUIT SECTION ---
-circuit_col1, circuit_col2 = st.columns(2, vertical_alignment="center")
+hover_zoom_at_cursor(circuit_layout, height=300, zoom_factor=2.0, key="sub_zoom")
+st.info("👇 Need help? Click below for detailed instructions")
 
-with circuit_col1:
+with st.expander("📋 Step-by-step wiring guide"):
     st.markdown("""
 ### 🛠️ Setting up the Sub-Sensor
 
@@ -34,24 +70,25 @@ with circuit_col1:
                 
 👁️ :orange[Photoresistor] (LDR)
 
-  Leg 1: row 15 column e
-  Leg 2: row 20 column e
+  Leg 1: row 15 column f
+  Leg 2: row 19 column f
 
 ⚡ Resistor (10k Ohm):
 
-  Leg 1: row 20 column c (same row as LDR!)
-  Leg 2: row 25 column c
+  Leg 1: row 15 column h (same row as LDR!)
+  Leg 2: row 11 column h
 
 🧶 3 Wires:
 
-  Pin 5V to row 15 column a (Power to the 👁️ )
-  Pin A0 to row 20 column a (Signal between LDR and Resistor)
-  Pin GND to row 25 column a (Ground for the Resistor)
+  Arduino Pin 5V to row 18 column j (Power to the 👁️ )
+                
+  Arduino Pin A0 to row 15 column j (Signal between LDR and Resistor)
+                
+  Arduino Pin GND to row 11 column j (Ground for the Resistor)
                 """)
 
-with circuit_col2:
-    st.info("🐋 **Captain's Log:** This sensor acts like a submarine window. It sees how much 'Ocean Light' is coming through!")
-    hover_zoom_at_cursor(circuit_layout, width=300, height=300, zoom_factor=2.0, key="sub_zoom")
+st.info("🐋 **Captain's Log:** This sensor acts like a submarine window. It sees how much 'Ocean Light' is coming through!")
+    
 
 # --- CODE SECTION ---
 code_col1, code_col2 = st.columns([2.5,1.5])

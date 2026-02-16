@@ -13,11 +13,31 @@ from utils.utils import hover_zoom_at_cursor, complete_step_and_continue, get_au
 st.title("🚀 Project 5 - Top Secret Mission! 🤫")
 
 st.markdown("""
-Did you know your Arduino can **talk** to your computer? 
+🕵️‍♂️ Secret Spy Data Beam Mission
 
-Today, you are a **Secret Spy**. You will build a "Data Beam" that sends secret messages from your hardware to your screen!
+Did you know your Arduino can talk to your computer? 🤯
+It can send messages using a secret digital signal called a data beam!
 
-Get ready to crack the code! ⚡📟
+Today, you are a Secret Spy 🕶️
+Your mission is to build a special device that sends secret messages from your hardware straight to your screen.
+
+Wires connect your spy gadget, and the Arduino sends the information quietly and safely — just like a real spy system.
+
+When everything is working, you will see secret messages appear on the computer.
+No talking. No shouting. Just data. 📟⚡
+
+This mission teaches you how:
+
+The Arduino sends information
+
+The computer receives messages
+
+Engineers and spies share secret data
+
+Get ready…
+Build the beam.
+Watch the screen.
+Crack the code! 🔐✨
 
 """)
 
@@ -91,6 +111,7 @@ st.info("""
 st.info("""
 ### 🏆 Level Up!
 🧪 **Challenge 1:** Can you change the code to say your **Name**? 
+
 🧪 **Challenge 2:** Make the messages send **Super Fast** by changing the `delay` number to 100! ⚡
 
 """)

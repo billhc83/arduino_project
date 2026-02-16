@@ -17,48 +17,59 @@ Have you ever wondered how streetlights know exactly when to turn on at night? T
 
 Today, you will engineer a **Smart Night Light**. It will stay OFF during the day to save energy, but it will **automagically** glow when the sun goes down! 🌅➡️🌃
 """)
-
-# --- CIRCUIT SECTION ---
-circuit_col1, circuit_col2 = st.columns(2, vertical_alignment="center")
-
-with circuit_col1:
-    st.markdown("""
-### 🛠️ The Engineering Blueprint
+st.markdown("""
+### 🛠️ The Engineer’s Automatic Night Light Blueprint
 
 **What you need:**
-- **1x Photoresistor** (The Light Sensor) 👁️
-- **1x LED** (The Night Light) 🚨
-- **1x 220-ohm Resistor** (For the LED) ⚡
-- **1x 10k-ohm Resistor** (For the Sensor) ⚡
+
+**1× Photoresistor** (The Light Detective) 👁️  
+Always on the lookout! This part checks how bright the room is and knows when the lights go out.
+
+**1× LED** (The Night Light) 💡  
+The friendly glow that turns on when it gets dark, helping guide the way.
+
+**1× 220-ohm Resistor** (The LED Bodyguard) ⚡  
+Keeps the LED safe by stopping too much electricity from rushing in.
+
+**1× 10k-ohm Resistor** (The Sensor Sidekick) ⚡  
+Works together with the light detective to decide exactly when it’s dark enough to turn the light on.
+""")
+
+hover_zoom_at_cursor(nightlight_layout, height=300, zoom_factor=2.0, key="nightlight_zoom")
+
+st.info("👇 Need help? Click below for detailed instructions")
+
+with st.expander("📋 Step-by-step wiring guide"):
+    st.markdown("""
 
 ## 🧱 Breadboard layout
 
 ##### 👁️ :orange[Photoresistor] (The Eye)
-*   **Leg 1**: Row 15 column e
-    **Leg 2**: Row 20 column e
+*  **Leg 1**: Row 15 column f
+*  **Leg 2**: Row 18 column f
 
 ##### 💡 :red[Red] LED
-*   **Long leg:** row 10 column e
-*   **Short leg:** row 7 column e
+*   **Long leg:** row 6 column e
+*   **Short leg:** row 5 column e
 
-##### ⚡ Resistor (220 Ohm): 
-*   **Leg 1:** row 7 column c
-*   **Leg 2:** - rail/ ground
+##### ⚡ Resistor (220 or 330 Ohm): 
+*   **Leg 1:** row 5 column d
+*   **Leg 2:** row 1 column d
 
 ##### ⚡ Resistor (10K Ohm): 
-*   **Leg 1:** row 20 column c
-*   **Leg 2:** row 25 column c
+*   **Leg 1:** row 15 column h
+*   **Leg 2:** row 11 column h
                 
 ##### 🧶 Wires:   
-1.  **Pin 13** to **row 10 column a** (Power for the light)
-2.  **Pin GND** to  **- rail ** (The ground path)
-3.  **- rail/ground** to row 25 column a
-4.  **Pin A0** to row 20 column a 
-5.  **Pin 5V** to row 15 column a
+1.  **Arduino Pin 13** to **row 6  column a** (Power for the light)
+2.  **Arduino Pin GND** to  **- rail ** (The ground path)
+3.  **- rail/ground** to row 1 column a
+4.  **Arduino Pin A0** to row 15 column j 
+5.  **Arduino Pin 5V** to row 18 column j
+6.  **- rail/ground** to row 11 column f
 """)
-with circuit_col2:
-    st.info("🧠 **Engineer Tip:** We are combining an **INPUT** (the eye) with an **OUTPUT** (the light) to make a smart machine!")
-    hover_zoom_at_cursor(nightlight_layout, width=300, height=300, zoom_factor=2.0, key="nightlight_zoom")
+
+st.info("🧠 **Engineer Tip:** We are combining an **INPUT** (the eye) with an **OUTPUT** (the light) to make a smart machine!")
 
 # --- CODE SECTION ---
 code_col1, code_col2 = st.columns([2.5,1.5])
