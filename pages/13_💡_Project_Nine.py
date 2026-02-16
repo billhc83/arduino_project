@@ -48,7 +48,7 @@ with st.expander("📋 Step-by-step wiring guide"):
   ## 🧶 Wiring the Core
 
   1.  **Pin GND** ➡️ **- rail / Ground Rail** (The Main Drain) 🚰
-  2.  **Pin 13** ➡️ **row 10 column a** (Power for the LED)
+  2.  **Pin 8** ➡️ **row 10 column a** (Power for the LED)
 
                 
   *Tip: Ensure your Resistor reaches all the way to the blue Ground Rail!* 🔌
@@ -78,7 +78,7 @@ String powerSlot = "Crusty Club Sandwich";
 int currentEnergy = 0; // This starts at 0
 
 void setup() {
-  pinMode(13, OUTPUT);
+  pinMode(8, OUTPUT);
   Serial.begin(9600);
   Serial.println("--- SCANNING POWER SLOT ---");
 }
@@ -101,14 +101,14 @@ void loop() {
 
   // 💡 EXECUTION: Use the Energy we found!
   if (currentEnergy > 0) {
-    digitalWrite(13, HIGH);
+    digitalWrite(8, HIGH);
     Serial.print("SUCCESS: Found ");
     Serial.print(powerSlot);
     Serial.print("! Energy Level: ");
     Serial.println(currentEnergy);
   } 
   else {
-    digitalWrite(13, LOW);
+    digitalWrite(8, LOW);
     Serial.print("⚠️ ERROR: Cannot run on ");
     Serial.println(powerSlot);
     Serial.println("Engineer Note: Wrong part in slot! ❌");

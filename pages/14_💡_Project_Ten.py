@@ -73,7 +73,7 @@ with st.expander("📋 Step-by-step wiring guide"):
 3.  **- rail** ➡️ **row 18 column d** (Power for Key 2)
 4.  **Pin 2** ➡️ **row 24 column a** (Signal for Key 1)
 5.  **Pin 3** ➡️ **row 17 column a** (Signal for Key 2)
-6.  **Pin 13** ➡️ **row 12 column a** (Power for Vault Light)
+6.  **Pin 8** ➡️ **row 12 column a** (Power for Vault Light)
                 """)
 
 
@@ -100,7 +100,7 @@ int LockB = 0;
 void setup() {
   pinMode(2, INPUT_PULLUP);
   pinMode(3, INPUT_PULLUP);
-  pinMode(13, OUTPUT);
+  pinMode(8, OUTPUT);
   Serial.begin(9600);
   Serial.println("--- VAULT SYSTEM ARMED ---");
 }
@@ -112,11 +112,11 @@ void loop() {
 
   // 2. The Logic: Check if BOTH bolts are Unlocked (1)
   if (LockA == 1 && LockB == 1) {
-    digitalWrite(13, HIGH);
+    digitalWrite(8, HIGH);
     Serial.println("🔓 ACCESS GRANTED: Vault Open!");
   } 
   else {
-    digitalWrite(13, LOW);
+    digitalWrite(8, LOW);
     Serial.println("🔒 ACCESS DENIED: Locks Engaged.");
   }
   
@@ -128,7 +128,7 @@ with code_col2:
     st.markdown("""
 ## 🧬 How the Spy Logic Works
 
-**The "&&" Code**
+**The "&&" Code** 
 - This symbol means **"AND."** It’s like a secret handshake. The computer asks: "Is Lock A open **AND** is Lock B open?" If the answer is YES to both, the light turns on! 🤝🚨
 
 **Variables as Memory**
