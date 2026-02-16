@@ -14,12 +14,6 @@ def admin_get_next_step(current_step_title, pages_map):
         return None
     return None
 
-# Usage in your Admin Tab:
-# next_to_unlock = admin_get_next_step(submitted_page_title, pages_map)
-# if next_to_unlock:
-#     unlock_for_specific_user(target_user_id, next_to_unlock)
-
-
 # Immediately stop unauthorized users
 if not st.session_state.get("is_admin", False):
     st.error("Unauthorized Access")
@@ -189,7 +183,19 @@ with tab4:
     st.subheader("👥 Edit App Users")
     
     # 1. Fetch current user data
-    user_df = conn.query("SELECT username, password, is_admin, is_approved FROM users", ttl=0)
+    query = """
+    SELECT 
+        u.username, 
+        c.password, 
+        u.is_admin, 
+        u.is_approved 
+    FROM public.users u
+    JOIN private.user_creds c ON u.username = c.username
+"""
+
+
+    user_df = conn.query(query, ttl=0)
+
     
     # 2. Display editable table
     edited_data = st.data_editor(

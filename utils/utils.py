@@ -176,16 +176,25 @@ def hover_zoom_at_cursor(image, height=600, zoom_factor=2.5, key="unique"):
     from sqlalchemy import text
 
 def create_new_user(username, password):
-    """Admin utility to manually add a user to the cloud database."""
     hashed = hash_password(password)
     try:
         with conn.session as s:
+            # Insert into PUBLIC users table
             s.execute(
-                text("INSERT INTO users (username, password) VALUES (:u, :p)"),
+                text("INSERT INTO public.users (username, is_admin, is_approved) VALUES (:u, :a, :ap)"),
+                {"u": username, "a": False, "ap": False}
+            )
+            
+            # Insert into PRIVATE credentials table
+            s.execute(
+                text("INSERT INTO private.user_creds (username, password) VALUES (:u, :p)"),
                 {"u": username, "p": hashed}
             )
+            
             s.commit()
         return True, f"User {username} created successfully!"
     except Exception as e:
-        return False, str(e)
+        return False, f"Error: {str(e)}"
+
+
 

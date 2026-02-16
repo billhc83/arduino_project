@@ -6,12 +6,13 @@ import requests
 from sqlalchemy import text
 
 def update_password_secure(username, new_password):
-    """Hashes and updates the password in the DB."""
+    """Hashes and updates the password in the PRIVATE credentials table."""
     hashed_new = hash_password(new_password)
     try:
         with conn.session as s:
+            # Change the table to private.user_creds
             s.execute(
-                text("UPDATE users SET password = :p WHERE LOWER(username) = LOWER(:u)"),
+                text("UPDATE private.user_creds SET password = :p WHERE LOWER(username) = LOWER(:u)"),
                 {"p": hashed_new, "u": username.strip()}
             )
             s.commit()
@@ -19,6 +20,7 @@ def update_password_secure(username, new_password):
     except Exception as e:
         st.error(f"Database error: {e}")
         return False
+
 
 
 def hash_password(password):
