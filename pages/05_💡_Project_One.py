@@ -43,16 +43,7 @@ Other pins are for talking to your toys. When the Arduino wants to do something,
 🎵 "Beep-beep!" (Makes a buzzer make noise)
 
 ---
-### OUTPUT
             
-#### What can an Output do?
-✨ Light up: It can turn on a tiny light to show a bright color.
-            
-⚙️ Move: It can make a motor spin a wheel or wave a robot arm.
-            
-🎵 Make Noise: It can make a buzzer go "Beep!" or play a happy tune.
-            
-
 #### Two ways to "talk":
 1️⃣ On or Off: Like a light switch. The Arduino says "YES, turn on!" or "NO, stay off!" 💡
             

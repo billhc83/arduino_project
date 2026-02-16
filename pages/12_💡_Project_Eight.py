@@ -136,7 +136,7 @@ with code_col2:
 - Electricity can't jump across the middle gap (the valley). We use wires to send power to the right side so the **Buzzer** can roar! ⚡🌉
 
 **The Ground Rail (-)**
-- Every part of our castle sends its "used" energy back to the **Blue Rail**. It's the most important connection on your board! 🚰💨
+- Every part of our castle sends its "used" energy back to the **Blue Rail**. It's the most important connection on your board! 🏰
 
 **Tone Control**
 - The Arduino sends a fast "wiggle" of electricity to Pin 8 to make the buzzer vibrate. That's how we get sound! 🔊🎶

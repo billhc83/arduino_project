@@ -44,7 +44,7 @@ Slows the wild electricity down so it doesn’t escape or fry the experiment!
 ✨ **LED (Any Color)** (The Energy Crystal!)  
 This crystal glows with mysterious power when the experiment is activated.
 
-〰️ **Jumper Wires** (The Crackling Lab Cables!)  
+〰️ **Jumper Wires** (The Lab Cables!)  
 Carry energy between parts as the experiment comes to life.
 
 🔘 **Push Button** (The Experiment Trigger!)  

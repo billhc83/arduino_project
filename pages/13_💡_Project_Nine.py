@@ -64,9 +64,8 @@ If you try to put a **String** in an **int** slot, the machine will crash!
 # --- CODE SECTION ---
 code_col1, code_col2 = st.columns([2.5,1.5])
 
-with code_col1:
-    st.markdown("## 📜 The Inspection Script")
-    st.code("""
+st.markdown("## 📜 The Inspection Script")
+st.code("""
 // 📦 This is our Universal Power Slot!
 // Remove the // from the one you want to test and upload:
 
@@ -118,23 +117,81 @@ void loop() {
 }
 """, language="cpp")
 
-with code_col2:
-    st.markdown("""
-## 🧬 Engineering Test Procedures
+st.markdown("""
+## 🛠️ Project Tips
 
-**Test 1: The Empty Port** 📭
-Run the code as-is. Since both slots are empty, the system just waits.
+### 1️⃣ How the `//` slashes work (VERY IMPORTANT)
 
-**Test 2: The Lunch Disaster** 🥪
-Change the top of your code to:
-`String snackSlot = "Crusty Club Sandwich";`
-The machine sees the word and gives a **Sandwich Alert**! 
+In this code, the double slashes `//` mean **IGNORE THIS LINE**.  
+The Arduino will **not read** any line that starts with `//`.
 
-**Test 3: High-Voltage Bootup** 🚀
-Plug in a battery by changing the number:
-`int batterySlot = 100;` // (Mega-Glow Moon-Milk)
-The machine prioritizes the battery and turns the **Status LED** ON!
-""")
+Here is how the code starts **right now**:
+
+<pre><code>
+// String powerSlot = "Mega-Glow Moon-Milk"; 
+// String powerSlot = "Sparky-Squirrel Static";
+// String powerSlot = "Zappy-Zucchini Juice";
+String powerSlot = "Crusty Club Sandwich"; 
+</code></pre>
+
+- The **first three lines are OFF** because they have `//`
+- The **last line is ON** because it has **no `//`**
+- This means the Arduino starts by using **Crusty Club Sandwich**
+
+---
+
+### 2️⃣ How to change which power slot is used
+
+To test a different power slot, you must **move the slashes**.
+
+Example: to turn ON **Mega-Glow Moon-Milk**:
+
+<pre><code>
+String powerSlot = "Mega-Glow Moon-Milk"; 
+// String powerSlot = "Sparky-Squirrel Static";
+// String powerSlot = "Zappy-Zucchini Juice";
+// String powerSlot = "Crusty Club Sandwich"; 
+</code></pre>
+
+What you did:
+- Removed `//` from **one line** → turned it ON
+- Added `//` to the others → turned them OFF
+
+👉 **Only ONE powerSlot line should be ON at a time.**
+
+---
+
+### 3️⃣ What happens if ALL lines have `//`
+
+If **every** powerSlot line starts with `//`:
+
+<pre><code>
+// String powerSlot = "Mega-Glow Moon-Milk"; 
+// String powerSlot = "Sparky-Squirrel Static";
+// String powerSlot = "Zappy-Zucchini Juice";
+// String powerSlot = "Crusty Club Sandwich"; 
+</code></pre>
+
+The program will **NOT work** ❌
+
+Why?
+- The code later uses `powerSlot`
+- But `powerSlot` was never created
+- The computer shows an **error** because something is missing
+
+👉 **At least ONE powerSlot line must NOT have `//`.**
+
+---
+
+### 🧠 Big Idea
+
+- `//` turns code **OFF**
+- No `//` turns code **ON**
+- Missing code causes errors
+
+That’s how engineers test and fix programs!
+""", unsafe_allow_html=True)
+
 
 # --- INFO BOXES ---
 st.info("""
