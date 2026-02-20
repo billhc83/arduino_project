@@ -36,11 +36,9 @@ def complete_step_and_continue(pages_map, current_page_title=None):
     # Unlock next step
     titles_norm = list(pages_map_norm.keys())
     idx = titles_norm.index(current_norm)
-    print(idx)
     next_title = None
     if idx + 1 < len(titles_norm):
         next_norm = titles_norm[idx + 1]
-        print(next_norm)
         next_title = list(pages_map.keys())[list(pages_map_norm.keys()).index(next_norm)]
         save_and_unlock(next_title)
         if next_title not in unlocked_pages:

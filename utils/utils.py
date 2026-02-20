@@ -198,3 +198,24 @@ def create_new_user(username, password):
 
 
 
+def intro_player(intro_vid):
+    import streamlit.components.v1 as components
+    components.html(f"""
+        <div style="
+            width: 100%;
+            border-radius: 16px;
+            overflow: hidden;
+            background: transparent;
+        ">
+            <video 
+                autoplay 
+                muted 
+                style="
+                    width: 100%;
+                    display: block;
+                    border-radius: 16px;
+                ">
+                <source src= "{intro_vid}" type="video/mp4">
+            </video>
+        </div>
+    """, height=450)

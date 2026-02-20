@@ -6,7 +6,11 @@ from utils.steps import complete_step_and_continue
 
 circuit_layout = Image.open("graphics/project_three_circuit.png")
 
+
 st.title("🧪 Project 3 – Mad Scientist Button Machine")
+
+from utils.utils import intro_player
+intro_player("https://github.com/billhc83/arduino_project/releases/download/v1.0.2/project_three_intro_vid.mp4.mp4")
 
 st.markdown("""
 Welcome to the Mad Scientist Laboratory! 🧠⚡
@@ -51,40 +55,89 @@ Carry energy between parts as the experiment comes to life.
 Press and hold to activate the energy crystal — release it and the power shuts down!
 """)
 
+from utils.assembly_guide import assembly_guide, coordinate_picker
 
-hover_zoom_at_cursor(circuit_layout, height=300, zoom_factor=2.0, key="circuit1")
+steps = [
+    {
+        "instruction": "Let light the energy crystal",
+        "tip": "Press the next button for a step by step guide",  
+    },
+    {
+        "instruction": "Place the LED long leg in row 12, column E. <br>Place the LED short leg in row 11, column E",
+        "tip": "The long leg is positive — it's called the anode!",
+        "highlights": [
+             {"pos": (733, 194, 903, 319), "shape": "rect"}
+             ],    # pixel coords on your image
+        "greyout": True,   # dims everything outside the highlights
+        #"label": "LED +",
+    },
+    {
+        "instruction": "Place one leg of the resistor in row 11, column D. <br>Place the second leg of the resistor in row 7, column D",
+        "tip": "The resistor slows down the electricity",
+        "highlights": [
+             {"pos": (691, 307, 834, 368), "shape": "rect"},
+             {"pos": (500, 161), "shape": "circle", "radius": 50}
+             ],    # pixel coords on your image
+        "greyout": True,   # dims everything outside the highlights
+    },
+    {
+        "instruction": "Place the button onto the breadboard. <br>There are 4 legs on the button, each one goes to its own spot on the breadboard. <br>Button leg → row 18 e <br>Button leg → row 18 f <br>Button leg → row 20 e <br>Button leg → row 20 f",
+        "tip": "The button will let us control the energy crystal",
+        "highlights": [
+             {"pos": (905, 224, 1010, 360), "shape": "rect"}
+             ],    # pixel coords on your image
+        "greyout": True,   # dims everything outside the highlights
+    },
+    {
+        "instruction": "Place one end of the wire in the Arduino Pin GND. <br>Place the other end in the negative / - rail",
+        "tip": "The wires are like roads for electricity",
+        "highlights": [
+             {"pos": (328, 82, 639, 271), "shape": "rect"}
+             ],    # pixel coords on your image
+        "greyout": True,   # dims everything outside the highlights
+    },
+    {
+        "instruction": "Place one end of the wire in the Arduino Pin 8. <br>Place the other end in row 12 column A",
+        "tip": "This wire sends the power to the energy crystal (light)",
+        "highlights": [
+             {"pos": (357, 378, 838, 448), "shape": "rect"}  
+             ],    # pixel coords on your image
+        "greyout": True,   # dims everything outside the highlights
+    },
+    {
+        "instruction": "Place one end of the wire in the Arduino Pin 2. <br>Place the other end in row 18 column A",
+        "tip": "this wire is listening for the button to be pressed",
+        "highlights": [
+             {"pos": (929, 398, 952, 500), "shape": "rect"},
+             {"pos": (382, 493, 950, 510), "shape": "rect"}
+             ],    # pixel coords on your image
+        "greyout": True,   # dims everything outside the highlights
+    },
+    {
+        "instruction": "Place one end of the wire in row 7 column E. <br>Place the other end in the negative / - rail",
+        "tip": "Wires are like roads for electicity.  A circuit is like a race track for electricity! We must make a loop. This wire connects our circuit back to the Arduino",
+        "highlights": [
+             {"pos": (660, 101, 760, 320), "shape": "rect"}
+             ],    # pixel coords on your image
+        "greyout": True,   # dims everything outside the highlights
+    },
+    {
+        "instruction": "Place one end of the wire in row 20 column J. <br>Place the other end in the negative / - rail",
+        "tip": "This wire completes our loop.  it connects our button back to the Arduino",
+        "highlights": [
+             {"pos": (928, 95, 1013, 224), "shape": "rect"}
+             ],    # pixel coords on your image
+        "greyout": True,   # dims everything outside the highlights
+    }]
+tab1, tab2 = st.tabs(["**📋 Quick Overview**", "**🔧 Step-by-Step**"])
 
-st.info("👇 Need help? Click below for detailed instructions")
+with tab1:
+  
+  hover_zoom_at_cursor(circuit_layout, zoom_factor=2.0, key="circuit1")
 
-with st.expander("📋 Step-by-step wiring guide"):
+with tab2:
 
-    st.markdown("""
- **💡 LED (Energy Crystal)**
-
-- Long leg → row 12, column **e**  
-- Short leg → row 11, column **e**
-                  
-- Resistor 330 or 220 Ohms → row 11 **d** → row 7 **d**
-
-**Wires**
-
-- Arduino **pin 8** → row 12 **a**  
-- Wire from **row 7 e** → negative (–) rail
-
----
-
-**🔘 Button (Trigger Switch)**
-
-- Button leg → row 18 **e**  
-- Button leg → row 18 **f**
-- Button leg → row 20 **e**  
-- Button leg → row 20 **f**
-
-**Wires**
-
-- Arduino **pin 2** → row 18 **a**  
-- Wire from row 20 **j** → negative (–) rail""")
-
+  assembly_guide("graphics/project_three_circuit.png", steps, "Project 3: Mad Scientist Button Machine")
 
 code1, code2 = st.columns(2)
 

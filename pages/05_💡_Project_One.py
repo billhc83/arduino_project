@@ -80,31 +80,59 @@ st.title("""
 
     〰️ Wires (They are the robot's veins and nerves!)
    """)
-hover_zoom_at_cursor(circuit_layout, zoom_factor=2.0, key="circuit1")
-st.info("👇 Need help? Click below for detailed instructions")
 
-with st.expander("📋 Step-by-step wiring guide"):
-       st.markdown("""  
-                   
-    ## 🧱 Breadboard layout (exact wire & part placement)
+from utils.assembly_guide import assembly_guide, coordinate_picker
 
-    ##### :red[Red] LED
+steps = [
+    {
+        "instruction": "Lets Build Our first Project",
+        "tip": "Press the next button for a step by step guide",  
+    },
+    {
+        "instruction": "Place the LED long leg in row 12, column E. <br>Place the LED short leg in row 11, column E",
+        "tip": "The long leg is positive — it's called the anode!",
+        "highlights": [
+             {"pos":(805, 195, 805, 310), "shape": "rect"}
+             ],    # pixel coords on your image
+        "greyout": True,   # dims everything outside the highlights
+        #"label": "LED +",
+    },
+    {
+        "instruction": "Place one leg of the resistor in row 11, column D. <br>Place the second leg of the resistor in row 7, column D",
+        "tip": "The resistor slows down the electricity",
+        "highlights": [
+             {"pos":(750, 350, 790, 340), "shape": "rect"},
+             {"pos": (490, 155), "shape": "circle", "radius": 50}
+             ],    # pixel coords on your image
+        "greyout": True,   # dims everything outside the highlights
+    },
+    {
+        "instruction": "Place one end of the wire in the Arduino GND Pin. <br>Place the other end in row 7, column E",
+        "tip": "The wires are like roads for electricity",
+        "highlights": [
+             {"pos":(347, 222, 730, 335), "shape": "rect"}
+             ],    # pixel coords on your image
+        "greyout": True,   # dims everything outside the highlights
+    },
+    {
+        "instruction": "Place one end of the wire in the Arduino Pin 8. <br>Place the other end in row 12, column A",
+        "tip": "The wires are like roads for electricity",
+        "highlights": [
+             {"pos":(373, 373, 835, 440), "shape": "rect"}
+             ],    # pixel coords on your image
+        "greyout": True,   # dims everything outside the highlights
+    }
+]
+tab1, tab2 = st.tabs(["**📋 Quick Overview**", "**🔧 Step-by-Step**"])
 
-      * Long leg: row 12 column e
+with tab1:
+  
+  hover_zoom_at_cursor(circuit_layout, zoom_factor=2.0, key="circuit1")
 
-      * Short leg: row 1 column e
+with tab2:
 
-    ##### Resistor 330 or 220 Ohms: 
-      
-     * row 11 column d, row 7 column d
+  assembly_guide("graphics/project_one_circuit.png", steps, "Project 1: Lights ON!!")
 
-    ##### 2 Wires:   
-        
-    1:  Arduino pin 8, row 12 column a
-
-    2:  Arduino pin GND, row 7 column e
-
-    """)
 code1, code2 = st.columns([2.5,1.5])
 
 with code1:

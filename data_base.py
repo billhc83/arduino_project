@@ -134,7 +134,6 @@ def log_final_activity():
     """Logs the stay duration for the current page before the session ends."""
     if "start_time" in st.session_state and "current_page" in st.session_state:
         duration = round(time.time() - st.session_state.start_time, 2)
-        print(duration  )
         user = st.session_state.get("user_id", "Anonymous")   
 
 # Only log if they were actually on the page for a moment
