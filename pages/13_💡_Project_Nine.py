@@ -25,34 +25,55 @@ We have three futuristic battery types and one very delicious lunch to test:
 Let's see what happens when we try to power our machine with a sandwich!
 """)
 
+from utils.assembly_guide import assembly_guide, coordinate_picker
+steps = [
+    {
+        "instruction": "Lets Discover the Universal Power Slot",
+        "tip": "Press the next button for a step by step guide",  
+    },
+    {
+        "instruction": "Place the LED long leg in row 12, column E. <br>Place the LED short leg in row 11, column E",
+        "tip": "The long leg is positive — it's called the anode!",
+        "highlights": [
+             {"pos": (708, 175, 899, 331), "shape": "rect"}
+             ],    # pixel coords on your image
+        "greyout": True,   # dims everything outside the highlights
+        #"label": "LED +",
+    },
+    {
+        "instruction": "Place one leg of the 220 ohm resistor in row 11, column D. <br>Place the second leg of the resistor in row 7, column D",
+        "tip": "The resistor slows down the electricity",
+        "highlights": [
+             {"pos": (693, 324, 825, 363), "shape": "rect"},
+             {"pos": (492, 154), "shape": "circle", "radius": 60}
+             ],    # pixel coords on your image
+        "greyout": True,   # dims everything outside the highlights
+    },
+    {
+        "instruction": "Place one end of the wire in the Arduino GND Pin. <br>Place the other end in row 7, column E",
+        "tip": "The wires are like roads for electricity",
+        "highlights": [
+             {"pos": (375, 231, 740, 339), "shape": "rect"}
+             ],    # pixel coords on your image
+        "greyout": True,   # dims everything outside the highlights
+    },
+    {
+        "instruction": "Place one end of the wire in the Arduino Pin 8. <br>Place the other end in row 12, column A",
+        "tip": "The wires are like roads for electricity",
+        "highlights": [
+             {"pos": (346, 350, 844, 453), "shape": "rect"}
+             ],    # pixel coords on your image
+        "greyout": True,   # dims everything outside the highlights
+    }]
+tab1, tab2 = st.tabs(["**📋 Quick Overview**", "**🔧 Step-by-Step**"])  
 
+with tab1:
+  
+  hover_zoom_at_cursor(workshop_layout, zoom_factor=2.0, key="circuit1")
 
-hover_zoom_at_cursor(workshop_layout, height=300, zoom_factor=2.0, key="power_slot_zoom")
+with tab2:
 
-
-st.info("👇 Need help? Click below for detailed instructions")
-
-with st.expander("📋 Step-by-step wiring guide"):
-    
-    st.markdown("""
-  ## 🧱 The Power Core Layout
-
-  ##### 💡 :red[System Status LED]
-  *   **Long leg:** row 12 column e
-  *   **Short leg:** row 11 column e
-
-  ##### ⚡ Resistor (220 Ohm - Red, Red, Brown): 
-  *   **Leg 1:** row 11 column d
-  *   **Leg 2:** row 7 column d
-
-  ## 🧶 Wiring the Core
-
-  1.  **Pin GND** ➡️ **- rail / Ground Rail** (The Main Drain) 🚰
-  2.  **Pin 8** ➡️ **row 10 column a** (Power for the LED)
-
-                
-  *Tip: Ensure your Resistor reaches all the way to the blue Ground Rail!* 🔌
-                """)
+  assembly_guide("graphics/project_one_circuit.png", steps, "Project 9: The Universal Power Slot")
 
 st.info("""
 🧠 **Engineer's Data Guide:**

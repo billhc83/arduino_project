@@ -35,39 +35,118 @@ Keeps the LED safe by stopping too much electricity from rushing in.
 Works together with the light detective to decide exactly when it’s dark enough to turn the light on.
 """)
 
-hover_zoom_at_cursor(nightlight_layout, height=300, zoom_factor=2.0, key="nightlight_zoom")
+from utils.assembly_guide import assembly_guide, coordinate_picker
 
-st.info("👇 Need help? Click below for detailed instructions")
+steps = [
+    {
+        "instruction": "Activate the launch button!!",
+        "tip": "Press the next button for a step by step guide",  
+    },
+    {
+        "instruction": "Place the LED long leg in row 6, column E. <br>Place the LED short leg in row 5, column E",
+        "tip": "The long leg is positive — it's called the anode!",
+        "highlights": [
+             {"pos": (651, 232, 841, 382), "shape": "rect"}
+             ],    # pixel coords on your image
+        "greyout": True,   # dims everything outside the highlights
+        #"label": "LED +",
+    },
+    {
+        "instruction": "Place one leg of the 220 Ohm resistor in row 5, column D. <br>Place the second leg of the resistor in row 1, column D",
+        "tip": "The resistor slows down the electricity",
+        "highlights": [
+             {"pos": (629, 356, 766, 435), "shape": "rect"},
+             {"pos": (507, 449), "shape": "circle", "radius": 60}
+             ],    # pixel coords on your image
+        "greyout": True,   # dims everything outside the highlights
+    },  
+    {
+        "instruction": "Place one leg of the photoresistor in row 15, column F. <br>Place the second leg of the photoresistor in row 18, column F",
+        "tip": "This is the photoresistor, it is a light sensor",
+        "highlights": [
+             {"pos": (962, 309), "shape": "circle", "radius": 45},
+             {"pos": (773, 577, 1006, 662), "shape": "rect"}
+             ],    # pixel coords on your image
+        "greyout": True,   # dims everything outside the highlights
+        #"label": "LED +",
+    },
+    {
+        "instruction": "Place one end of the 10k Ohm resistor in row 11 column H. <br>Place the other end of the 10k resistor in row  15 column H",
+        "tip": "resistors come in many different sizes",
+        "highlights": [
+             {"pos": (745, 77), "shape": "circle", "radius": 55},
+             {"pos": (831, 260, 960, 303), "shape": "rect"}
+             ],    # pixel coords on your image
+        "greyout": True,   # dims everything outside the highlights
+    },
+    {
+        "instruction": "Place one end of the wire in the Arduino Pin GND. <br>Place the other end in the negative / - rail",
+        "tip": "Ground wires help complete our circuit loop",
+        "highlights": [
+             {"pos": (590, 496, 691, 526), "shape": "rect"},
+             {"pos": (590, 285, 624, 526), "shape": "rect"},
+             {"pos": (388, 285, 624, 311), "shape": "rect"}
+             ],    # pixel coords on your image
+        "greyout": True,   # dims everything outside the highlights
+    },
+    {
+        "instruction": "Place one end of the wire in the Arduino Pin A0. <br>Place the other end in row 15 column J",
+        "tip": "this wire is listening signal from the light sensor",
+        "highlights": [
+             {"pos": (906, 210, 952, 265), "shape": "rect"},
+             {"pos": (215, 208, 946, 246), "shape": "rect"},
+             {"pos": (52, 208, 227, 513), "shape": "rect"}
+             ],    # pixel coords on your image
+        "greyout": True,   # dims everything outside the highlights
+    },
+    {
+        "instruction": "Place one end of the wire in Arduino Pin 5V. <br>Place the other end in row 18 column J",
+        "tip": "This wire powers our night lights sensor",
+        "highlights": [
+             {"pos": (962, 172, 1010, 260), "shape": "rect"},
+             {"pos": (600, 172, 1006, 214), "shape": "rect"},
+             {"pos": (600, 6, 645, 214), "shape": "rect"},
+             {"pos": (8, 0, 645, 50), "shape": "rect"},
+             {"pos": (0, 12, 84, 408), "shape": "rect"}
+             ],    # pixel coords on your image
+        "greyout": True,   # dims everything outside the highlights
+    },
+    {
+        "instruction": "Place one end of the wire in Arduino Pin 13. <br>Place the other end in row 6 column A",
+        "tip": "This wire powers our night light",
+        "highlights": [
+             {"pos": (740, 435, 831, 571), "shape": "rect"},
+             {"pos": (529, 547, 770, 571), "shape": "rect"},
+             {"pos": (529, 307, 578, 560), "shape": "rect"},
+             {"pos": (402, 307, 578, 331), "shape": "rect"}
+             ],    # pixel coords on your image
+        "greyout": True,   # dims everything outside the highlights
+    },
+    {
+        "instruction": "Place one end of the wire in row 1 column A. <br>Place the other end in the negative / - rail",
+        "tip": "This wire completes our loop for the light",
+        "highlights": [
+             {"pos": (641, 433, 768, 530), "shape": "rect"}
+             ],    # pixel coords on your image
+        "greyout": True,   # dims everything outside the highlights
+    },
+    {
+        "instruction": "Place one end of the wire in row 11 column F. <br>Place the other end in the negative / - rail",
+        "tip": "This wire completes our loop for the light sensor",
+        "highlights": [
+             {"pos": (827, 309, 1041, 532), "shape": "rect"}
+             ],    # pixel coords on your image
+        "greyout": True,   # dims everything outside the highlights
+    }]
+tab1, tab2 = st.tabs(["**📋 Quick Overview**", "**🔧 Step-by-Step**"])  
 
-with st.expander("📋 Step-by-step wiring guide"):
-    st.markdown("""
+with tab1:
+  
+  hover_zoom_at_cursor(nightlight_layout, zoom_factor=2.0, key="circuit1")
 
-## 🧱 Breadboard layout
+with tab2:
 
-##### 👁️ :orange[Photoresistor] (The Eye)
-*  **Leg 1**: Row 15 column f
-*  **Leg 2**: Row 18 column f
-
-##### 💡 :red[Red] LED
-*   **Long leg:** row 6 column e
-*   **Short leg:** row 5 column e
-
-##### ⚡ Resistor (220 or 330 Ohm): 
-*   **Leg 1:** row 5 column d
-*   **Leg 2:** row 1 column d
-
-##### ⚡ Resistor (10K Ohm): 
-*   **Leg 1:** row 15 column h
-*   **Leg 2:** row 11 column h
-                
-##### 🧶 Wires:   
-1.  **Arduino Pin 13** to **row 6  column a** (Power for the light)
-2.  **Arduino Pin GND** to  **- rail ** (The ground path)
-3.  **- rail/ground** to row 1 column a
-4.  **Arduino Pin A0** to row 15 column j 
-5.  **Arduino Pin 5V** to row 18 column j
-6.  **- rail/ground** to row 11 column f
-""")
+  assembly_guide("graphics/project_seven_circuit.png", steps, "Project 7: The Automatic Night Light")
 
 st.info("🧠 **Engineer Tip:** We are combining an **INPUT** (the eye) with an **OUTPUT** (the light) to make a smart machine!")
 

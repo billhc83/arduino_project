@@ -72,7 +72,7 @@ steps = [
         #"label": "LED +",
     },
     {
-        "instruction": "Place one leg of the resistor in row 11, column D. <br>Place the second leg of the resistor in row 7, column D",
+        "instruction": "Place one leg of the 220 ohm resistor in row 11, column D. <br>Place the second leg of the resistor in row 7, column D",
         "tip": "The resistor slows down the electricity",
         "highlights": [
              {"pos": (691, 307, 834, 368), "shape": "rect"},
@@ -100,7 +100,7 @@ steps = [
         "instruction": "Place one end of the wire in the Arduino Pin 8. <br>Place the other end in row 12 column A",
         "tip": "This wire sends the power to the energy crystal (light)",
         "highlights": [
-             {"pos": (357, 378, 838, 448), "shape": "rect"}  
+             {"pos": (357, 350, 838, 448), "shape": "rect"}  
              ],    # pixel coords on your image
         "greyout": True,   # dims everything outside the highlights
     },
@@ -109,7 +109,7 @@ steps = [
         "tip": "this wire is listening for the button to be pressed",
         "highlights": [
              {"pos": (929, 398, 952, 500), "shape": "rect"},
-             {"pos": (382, 493, 950, 510), "shape": "rect"}
+             {"pos": (382, 486, 952, 540), "shape": "rect"}
              ],    # pixel coords on your image
         "greyout": True,   # dims everything outside the highlights
     },
@@ -117,7 +117,7 @@ steps = [
         "instruction": "Place one end of the wire in row 7 column E. <br>Place the other end in the negative / - rail",
         "tip": "Wires are like roads for electicity.  A circuit is like a race track for electricity! We must make a loop. This wire connects our circuit back to the Arduino",
         "highlights": [
-             {"pos": (660, 101, 760, 320), "shape": "rect"}
+             {"pos": (660, 101, 760, 340), "shape": "rect"}
              ],    # pixel coords on your image
         "greyout": True,   # dims everything outside the highlights
     },
@@ -129,7 +129,7 @@ steps = [
              ],    # pixel coords on your image
         "greyout": True,   # dims everything outside the highlights
     }]
-tab1, tab2 = st.tabs(["**📋 Quick Overview**", "**🔧 Step-by-Step**"])
+tab1, tab2 = st.tabs(["**📋 Quick Overview**", "**🔧 Step-by-Step**"])  
 
 with tab1:
   

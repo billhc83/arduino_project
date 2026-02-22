@@ -53,39 +53,71 @@ This eye looks around underwater and tells the submarine how bright it is outsid
 ⚡ **Resistor** (The Current Controller!)  
 Slows the electricity down so the periscope eye gives smooth, accurate readings instead of going wild!
 """)
+from utils.assembly_guide import assembly_guide, coordinate_picker
 
-hover_zoom_at_cursor(circuit_layout, height=300, zoom_factor=2.0, key="sub_zoom")
-st.info("👇 Need help? Click below for detailed instructions")
+steps = [
+    {
+        "instruction": "Activate the launch button!!",
+        "tip": "Press the next button for a step by step guide",  
+    },
+    {
+        "instruction": "Place one leg of the photoresistor in row 15, column F. <br>Place the second leg of the photoresistor in row 18, column F",
+        "tip": "This is the photoresistor, it is a light sensor",
+        "highlights": [
+             {"pos": (962, 309), "shape": "circle", "radius": 45},
+             {"pos": (773, 577, 1006, 662), "shape": "rect"}
+             ],    # pixel coords on your image
+        "greyout": True,   # dims everything outside the highlights
+        #"label": "LED +",
+    },
+    {
+        "instruction": "Place one end of the 10k resistor in row 11 column H. <br>Place the other end of the 10k resistor in row  15 column H",
+        "tip": "resistors come in many different sizes",
+        "highlights": [
+             {"pos": (745, 77), "shape": "circle", "radius": 55},
+             {"pos": (831, 260, 960, 303), "shape": "rect"}
+             ],    # pixel coords on your image
+        "greyout": True,   # dims everything outside the highlights
+    },
+    {
+        "instruction": "Place one end of the wire in the Arduino Pin GND. <br>Place the other end in row 11 column J",
+        "tip": "Ground wires help complete our circuit loop",
+        "highlights": [
+             {"pos": (386, 230, 873, 315), "shape": "rect"}
+             ],    # pixel coords on your image
+        "greyout": True,   # dims everything outside the highlights
+    },
+    {
+        "instruction": "Place one end of the wire in the Arduino Pin A0. <br>Place the other end in row 15 column J",
+        "tip": "this wire is listening signal from the light sensor",
+        "highlights": [
+             {"pos": (906, 210, 952, 265), "shape": "rect"},
+             {"pos": (215, 208, 946, 246), "shape": "rect"},
+             {"pos": (52, 208, 227, 513), "shape": "rect"}
+             ],    # pixel coords on your image
+        "greyout": True,   # dims everything outside the highlights
+    },
+    {
+        "instruction": "Place one end of the wire in Arduino Pin 5V. <br>Place the other end in row 18 column J",
+        "tip": "This wire sends power to our Submarines light sensor",
+        "highlights": [
+             {"pos": (962, 172, 1010, 260), "shape": "rect"},
+             {"pos": (600, 172, 1006, 214), "shape": "rect"},
+             {"pos": (600, 6, 645, 214), "shape": "rect"},
+             {"pos": (8, 0, 645, 50), "shape": "rect"},
+             {"pos": (0, 12, 84, 408), "shape": "rect"}
+             ],    # pixel coords on your image
+        "greyout": True,   # dims everything outside the highlights
+    }]
+tab1, tab2 = st.tabs(["**📋 Quick Overview**", "**🔧 Step-by-Step**"])  
 
-with st.expander("📋 Step-by-step wiring guide"):
-    st.markdown("""
-### 🛠️ Setting up the Sub-Sensor
+with tab1:
+  
+  hover_zoom_at_cursor(circuit_layout, zoom_factor=2.0, key="circuit1")
 
-**Ship Supplies:**
-- **1x Photoresistor** (The Depth Eye) 👁️🌊
-- **1x 10k Resistor** (The Water-Proof Link) ⚡
-- **Jumper Wires** (The Submarine Cables) 🧶
+with tab2:
 
-### 🧱 Breadboard layout
-                
-👁️ :orange[Photoresistor] (LDR)
-
-  Leg 1: row 15 column f
-  Leg 2: row 19 column f
-
-⚡ Resistor (10k Ohm):
-
-  Leg 1: row 15 column h (same row as LDR!)
-  Leg 2: row 11 column h
-
-🧶 3 Wires:
-
-  Arduino Pin 5V to row 18 column j (Power to the 👁️ )
-                
-  Arduino Pin A0 to row 15 column j (Signal between LDR and Resistor)
-                
-  Arduino Pin GND to row 11 column j (Ground for the Resistor)
-                """)
+  assembly_guide("graphics/project_six_circuit.png", steps, "Project 6: Deep Sea Explorer")
 
 st.info("🐋 **Captain's Log:** This sensor acts like a submarine window. It sees how much 'Ocean Light' is coming through!")
     

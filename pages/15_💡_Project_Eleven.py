@@ -12,70 +12,305 @@ manual_car_layout = Image.open("graphics/project_eleven_circuit.png")
 st.title("🏎️ Project 11 - The Manual Super Car (Part 1)")
 
 st.markdown("""
-Welcome back to the Garage, **Master Mechanic**! 🛠️
+Welcome back to the Garage, Master Mechanic! 🛠️
+The tools are lined up. The engine is quiet. The dashboard is waiting for you.
 
-Before we make our car "Smart," we need to build the **Manual Dash**. In this version, every light and sound has its own physical control. 
+Before we turn this into a Smart Car, we have to build it the old-school way — manual control.
 
-You are going to engineer a **Headlight Switch**, a **Brake Pedal**, and a **Horn Button**! You are the pilot, and the car does exactly what your fingers tell it to do. 🕹️✨
+That means no computers making decisions yet.
+No automatic lights.
+No automatic braking.
+
+Right now, you are the driver and the engineer.
+
+In this project, you will build:
+
+💡 A Headlight Switch – Flip it on and the road lights up.
+🛑 A Brake Pedal – Press it and the brake light shines bright.
+📢 A Horn Button – Push it and let everyone hear that engine roar!
+
+Every button you press sends a signal.
+Every signal controls a part of the car.
+
+The super car does exactly what your fingers tell it to do — nothing more, nothing less.
+
+This is how real engineers start:
+
+One control
+
+One action
+
+One clear result
+
+Hands on the controls, Mechanic.
+Let’s build the dash. 🏁✨
 """)
-hover_zoom_at_cursor(manual_car_layout, height=300, zoom_factor=2.0, key="manual_car_zoom")
 
-st.info("👇 Need help? Click below for detailed instructions")
+from utils.assembly_guide import assembly_guide, coordinate_picker
 
-with st.expander("📋 Step-by-step wiring guide"):
-    st.markdown("""
-## 🧱 The Manual Dash Blueprint
-*We are using the **Magic 5** coordinates and the **- Rail** to keep our workshop tidy!*
+steps = [
+    {
+        "instruction": "Lets Light This Car UP!!!",
+        "tip": "Press the next button for a step by step guide",  
+    },
+    {
+        "instruction": "Place the LED long leg in row 1, column E. <br>Place the LED short leg in row 2, column E",
+        "tip": "This is the brake light",
+        "highlights": [
+             {"pos": (541, 219, 671, 372), "shape": "rect"}
+             ],    # pixel coords on your image
+        "greyout": True,   # dims everything outside the highlights
+        #"label": "LED +",
+    },
+    {
+        "instruction": "Place the LED long leg in row 30, column E. <br>Place the LED short leg in row 29, column E",
+        "tip": "This is the head light",
+        "highlights": [
+             {"pos": (1100, 202, 1234, 364), "shape": "rect"}
+             ],    # pixel coords on your image
+        "greyout": True,   # dims everything outside the highlights
+        #"label": "LED +",
+    },
+    {
+        "instruction": "Place one leg of the 220 Ohm resistor in row 11, column D. <br>Place the second leg of the resistor in row 7, column D",
+        "tip": "The resistor slows down the electricity",
+        "highlights": [
+             {"pos": (608, 337, 726, 403), "shape": "rect"},
+             {"pos": (734, 49), "shape": "circle", "radius": 60}
+             ],    # pixel coords on your image
+        "greyout": True,   # dims everything outside the highlights
+    },
+    {
+        "instruction": "Place one leg of the 220 Ohm resistor in row 2, column D. <br>Place the second leg of the resistor in row 6, column D",
+        "tip": "The resistor slows down the electricity",
+        "highlights": [
+             {"pos": (608, 337, 726, 403), "shape": "rect"},
+             {"pos": (734, 49), "shape": "circle", "radius": 60}
+             ],    # pixel coords on your image
+        "greyout": True,   # dims everything outside the highlights
+    },
+    {
+        "instruction": "Place one leg of the 220 Ohm resistor in row 29, column D. <br>Place the second leg of the resistor in row 25, column D",
+        "tip": "The resistor slows down the electricity",
+        "highlights": [
+             {"pos": (1053, 350, 1167, 397), "shape": "rect"},
+             {"pos": (1035, 41), "shape": "circle", "radius": 60}
+             ],    # pixel coords on your image
+        "greyout": True,   # dims everything outside the highlights
+    },
+    {
+        "instruction": "Place the button onto the breadboard. <br>There are 4 legs on the button, each one goes to its own spot on the breadboard. <br>Button leg → row 10 column E <br>Button leg → row 8 column E <br>Button leg → row 10 column F <br>Button leg → row 8 column F",
+        "tip": "The button will let us control the brake light",
+        "highlights": [
+             {"pos": (707, 280, 813, 366), "shape": "rect"}
+             ],    # pixel coords on your image
+        "greyout": True,   # dims everything outside the highlights
+    },
+    {
+        "instruction": "Place the button onto the breadboard. <br>There are 4 legs on the button, each one goes to its own spot on the breadboard. <br>Button leg → row 14 column E <br>Button leg → row 12 column E <br>Button leg → row 14 column F <br>Button leg → row 12 column F",
+        "tip": "The button will let us control the horn",
+        "highlights": [
+             {"pos": (809, 282, 886, 372), "shape": "rect"}
+             ],    # pixel coords on your image
+        "greyout": True,   # dims everything outside the highlights
+    },   
+    {
+        "instruction": "Place the headlight switch on the breadboard.<br>The centre pin goes in row 23 column E <br>The side pin goes in row 24 column E",
+        "tip": "The switch turns on the headlight",
+        "highlights": [
+             {"pos": (982, 266, 1087, 374), "shape": "rect"}
+             ],    # pixel coords on your image
+        "greyout": True,   # dims everything outside the highlights
+    },
+    {
+        "instruction": "Place the buzzer long leg in row 18, column E. <br>Place the buzzer short leg in row 18, column F",
+        "tip": "This is the horn",
+        "highlights": [
+             {"pos": (939, 327), "shape": "circle", "radius": 60}
+             ],
+          "labels": [
+        {
+            "text": "Long Leg",
+            "offset_x": -65,
+            "offset_y": 70,
+            "font_size": 24,
+        },
+        {
+            "text": "Short Leg",
+            "offset_x": -65,
+            "offset_y": -90,
+            "font_size": 24,
+        }
+    ],
+        "greyout": True,   # dims everything outside the highlights
+        #"label": "LED +",
+    },
+    {
+        "instruction": "Place one end of the wire in the Arduino Pin GND. <br>Place the other end in the negative / - rail",
+        "tip": "Ground wires help complete our circuit loop",
+        "highlights": [
+             {"pos": (333, 114, 557, 296), "shape": "rect"},
+             {"pos": (524, 114, 652, 170), "shape": "rect"}
+             ],    # pixel coords on your image
+        "greyout": True,   # dims everything outside the highlights
+    },
+    {
+        "instruction": "Place one end of the wire in Arduino Pin 13. <br>Place the other end in row 30 column A",
+        "tip": "This wire sends power to our headlight",
+        "highlights": [
+             {"pos": (337, 84, 569, 311), "shape": "rect"},
+             {"pos": (337, 51, 1244, 119), "shape": "rect"},
+             {"pos": (1211, 67, 1244, 454), "shape": "rect"},
+             {"pos": (1146, 413, 1240, 454), "shape": "rect"}
+             ],    # pixel coords on your image
+        "greyout": True,   # dims everything outside the highlights
+    },
+    {
+        "instruction": "Place one end of the wire in Arduino Pin 12. <br>Place the other end in row 1 column D",
+        "tip": "This wire powers our brake light",
+        "highlights": [
+             {"pos": (344, 297, 636, 387), "shape": "rect"}
+             ],    # pixel coords on your image
+        "greyout": True,   # dims everything outside the highlights
+    },
+    {
+        "instruction": "Place one end of the wire in Arduino Pin 8. <br>Place the other end in row 18 column C",
+        "tip": "This wire send power to our horn",
+        "highlights": [
+             {"pos": (354, 372, 965, 413), "shape": "rect"}
+             ],    # pixel coords on your image
+        "greyout": True,   # dims everything outside the highlights
+    },
+    {
+        "instruction": "Place one end of the wire in Arduino Pin 4. <br>Place the other end in row 12 column B",
+        "tip": "This is the signal for our horn button",
+        "highlights": [
+             {"pos": (563, 407, 841, 423), "shape": "rect"},
+             {"pos": (352, 407, 606, 491), "shape": "rect"}
+             
+             ],    # pixel coords on your image
+        "greyout": True,   # dims everything outside the highlights
+    },
+    {
+        "instruction": "Place one end of the wire in Arduino Pin 3. <br>Place the other end in row 8 column A",
+        "tip": "This is the signal for our brake light button",
+        "highlights": [
+             {"pos": (730, 419, 770, 540), "shape": "rect"},
+             {"pos": (518, 520, 764, 540), "shape": "rect"},
+             {"pos": (520, 530), "shape": "circle", "radius": 10},
+              {"pos": (510, 528), "shape": "circle", "radius": 10},
+              {"pos": (500, 526), "shape": "circle", "radius": 10},
+              {"pos": (490, 524), "shape": "circle", "radius": 10},
+              {"pos": (480, 522), "shape": "circle", "radius": 10},
+              {"pos": (470, 520), "shape": "circle", "radius": 10},
+              {"pos": (460, 518), "shape": "circle", "radius": 10},
+              {"pos": (450, 516), "shape": "circle", "radius": 10},
+              {"pos": (440, 514), "shape": "circle", "radius": 10},
+              {"pos": (430, 512), "shape": "circle", "radius": 10},
+              {"pos": (420, 510), "shape": "circle", "radius": 10},
+              {"pos": (410, 508), "shape": "circle", "radius": 10},
+              {"pos": (400, 506), "shape": "circle", "radius": 10},
+              {"pos": (390, 504), "shape": "circle", "radius": 10},
+              {"pos": (380, 505), "shape": "circle", "radius": 10},
+              {"pos": (370, 502), "shape": "circle", "radius": 10}
 
-##### 💡 :white[Headlights] (LED)
-*   **Long leg:** row 30 column e
-*   **Short leg:** row 29 column e
+             ],    # pixel coords on your image
+        "greyout": True,   # dims everything outside the highlights
+    },
+    {
+        "instruction": "Place one end of the wire in Arduino Pin 2. <br>Place the other end in row 23 column A",
+        "tip": "This is the signal for our headlight switch",
+        "highlights": [
+             {"pos": (1006, 413, 1047, 559), "shape": "rect"},
+             {"pos": (500, 542, 1047, 559), "shape": "rect"},
+             {"pos": (520, 550), "shape": "circle", "radius": 10},
+              {"pos": (510, 548), "shape": "circle", "radius": 10},
+              {"pos": (500, 546), "shape": "circle", "radius": 10},
+              {"pos": (490, 544), "shape": "circle", "radius": 10},
+              {"pos": (480, 542), "shape": "circle", "radius": 10},
+              {"pos": (470, 540), "shape": "circle", "radius": 10},
+              {"pos": (460, 538), "shape": "circle", "radius": 10},
+              {"pos": (450, 536), "shape": "circle", "radius": 10},
+              {"pos": (440, 534), "shape": "circle", "radius": 10},
+              {"pos": (430, 532), "shape": "circle", "radius": 10},
+              {"pos": (420, 530), "shape": "circle", "radius": 10},
+              {"pos": (410, 528), "shape": "circle", "radius": 10},
+              {"pos": (400, 526), "shape": "circle", "radius": 10},
+              {"pos": (390, 524), "shape": "circle", "radius": 10},
+              {"pos": (380, 525), "shape": "circle", "radius": 10},
+              {"pos": (370, 522), "shape": "circle", "radius": 10}
 
-##### 💡 :red[Brake Lights] (LED)
-*   **Long leg:** row 1 column e
-*   **Short leg:** row 2 column e
+             ],    # pixel coords on your image
+        "greyout": True,   # dims everything outside the highlights
+    },
+    {
+        "instruction": "Place one end of the wire in the Arduino GND Pin <br>Place the other end in the negative / - rail",
+        "tip": "This wire completes our loop for the swtich",
+        "highlights": [
+             {"pos": (1136, 474, 1181, 603), "shape": "rect"},
+             {"pos": (390, 562, 1179, 603), "shape": "rect"},
+             {"pos": (8, 350, 468, 603), "shape": "rect"}
+             ],    # pixel coords on your image
+        "greyout": True,   # dims everything outside the highlights
+    },
+    {
+        "instruction": "Place one end of the wire in row 6 column A <br>Place the other end in negative/ - rail",
+        "tip": "The wires are like roads for electricity",
+        "highlights": [
+             {"pos": (671, 411, 730, 505), "shape": "rect"}
+             ],    # pixel coords on your image
+        "greyout": True,   # dims everything outside the highlights
+    },
+    {
+        "instruction": "Place one end of the wire in row 10 column J <br>Place the other end in negative/ - rail",
+        "tip": "The wires are like roads for electricity",
+        "highlights": [
+             {"pos": (752, 123, 819, 243), "shape": "rect"}
+             ],    # pixel coords on your image
+        "greyout": True,   # dims everything outside the highlights
+    },
+    {
+        "instruction": "Place one end of the wire in row 14 column J <br>Place the other end in negative/ - rail",
+        "tip": "The wires are like roads for electricity",
+        "highlights": [
+             {"pos": (839, 119, 894, 254), "shape": "rect"}
+             ],    # pixel coords on your image
+        "greyout": True,   # dims everything outside the highlights
+    },
+    {
+        "instruction": "Place one end of the wire in row 18 column J <br>Place the other end in negative/ - rail",
+        "tip": "The wires are like roads for electricity",
+        "highlights": [
+             {"pos": (900, 127, 976, 241), "shape": "rect"}
+             ],    # pixel coords on your image
+        "greyout": True,   # dims everything outside the highlights
+    },
+    {
+        "instruction": "Place one end of the wire in row 24 column A <br>Place the other end in negative/ - rail",
+        "tip": "The wires are like roads for electricity",
+        "highlights": [
+             {"pos": (1030, 415, 1108, 507), "shape": "rect"}
+             ],    # pixel coords on your image
+        "greyout": True,   # dims everything outside the highlights
+    },
+    {
+        "instruction": "Place one end of the wire in row 25 column C <br>Place the other end in negative/ - rail",
+        "tip": "The wires are like roads for electricity",
+        "highlights": [
+             {"pos": (1073, 389, 1136, 503), "shape": "rect"}
+             ],    # pixel coords on your image
+        "greyout": True,   # dims everything outside the highlights
+    }]
+tab1, tab2 = st.tabs(["**📋 Quick Overview**", "**🔧 Step-by-Step**"])  
 
-##### 🔊 :blue[The Horn] (Buzzer)
-*   **Long leg (+):** row 18 column e
-*   **Short leg (-):** row 18 column f
+with tab1:
+  
+  hover_zoom_at_cursor(manual_car_layout, zoom_factor=2.0, key="circuit1")
 
-##### 🔑 :green[Headlight Switch] (Slide Switch)
-*   **Center Pin:** row 23 column e
-*   **Side Pin:** row 24 column e
+with tab2:
 
-##### 🔘 :orange[Brake Pedal] (Button)
-*   **Leg 1:** row 10 column e
-*   **Leg 2:** row 8 column e
-*   **Leg 1:** row 10 column f
-*   **Leg 2:** row 8 column f
+  assembly_guide("graphics/project_eleven_circuit.png", steps, "Project 11: The Manual Super Car (Part 1)")
 
-##### 🔘 :orange[Horn Button] (Button)
-*   **Leg 1:** row 14 column e
-*   **Leg 2:** row 12 column e
-*   **Leg 1:** row 14 column f
-*   **Leg 2:** row 12 column f
-
-##### ⚡ Resistors (220 Ohm x 2): 
-*   **Resistor 1:** row 2 column d ➡️ row 6 column d
-*   **Resistor 2:** row 29 column d ➡️ row 25 column d
-
-##### 🧶 Wiring the Manual Dash
-                
-**We need both ground rails this time add a wire from a GND pin to each - rail
-1.  **Pin GND** ➡️ **- rail / Ground Rail** X 2 (The Two Main Drains) 🚰 
-2.  **Pin 13** ➡️ **row 30 column a** (Headlight Power)
-3.  **Pin 12** ➡️ **row 1 column d** (Brake Power)
-4.  **Pin 8** ➡️ **row 18 column c** (Horn Power)
-5.  **Pin 2** ➡️ **row 23 column a** (Switch Signal)
-6.  **Pin 3** ➡️ **row 8 column a** (Brake Signal)
-7.  **Pin 4** ➡️ **row 12 column b** (Horn Signal)
-9.  **row 10 column j ➡️ **- rail** (Brake Drain)
-10. **row 14 column j** ➡️ **- rail** (Horn Drain)
-11. **row 18 column j** ➡️ **- rail** (Buzzer Drain)
-12.  **- rail** ➡️ **row 6 column a** (Brake Light Drain)
-13.  **- rail** ➡️ **row 24 column a** (Headlight Switch Drain)
-14.  **- rail** ➡️ **row 25 column c** (Brake Signal)
-                """)
 st.info("""
 🧠 **Mechanic's Secret:** 
 In this project, the Arduino is acting like a **Messenger**. 

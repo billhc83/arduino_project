@@ -71,24 +71,24 @@ from utils.assembly_guide import assembly_guide, coordinate_picker
 
 steps = [
     {
-        "instruction": "Time to make our light flash",
+        "instruction": "Lets light the Blinking Beacon",
         "tip": "Press the next button for a step by step guide",  
     },
     {
         "instruction": "Place the LED long leg in row 12, column E. <br>Place the LED short leg in row 11, column E",
         "tip": "The long leg is positive — it's called the anode!",
         "highlights": [
-             {"pos":(805, 195, 805, 310), "shape": "rect"}
+             {"pos": (708, 175, 899, 331), "shape": "rect"}
              ],    # pixel coords on your image
         "greyout": True,   # dims everything outside the highlights
         #"label": "LED +",
     },
     {
-        "instruction": "Place one leg of the resistor in row 11, column D. <br>Place the second leg of the resistor in row 7, column D",
+        "instruction": "Place one leg of the 220 ohm resistor in row 11, column D. <br>Place the second leg of the resistor in row 7, column D",
         "tip": "The resistor slows down the electricity",
         "highlights": [
-             {"pos":(750, 350, 790, 340), "shape": "rect"},
-             {"pos": (490, 155), "shape": "circle", "radius": 50}
+             {"pos": (693, 324, 825, 363), "shape": "rect"},
+             {"pos": (492, 154), "shape": "circle", "radius": 60}
              ],    # pixel coords on your image
         "greyout": True,   # dims everything outside the highlights
     },
@@ -96,7 +96,7 @@ steps = [
         "instruction": "Place one end of the wire in the Arduino GND Pin. <br>Place the other end in row 7, column E",
         "tip": "The wires are like roads for electricity",
         "highlights": [
-             {"pos":(347, 222, 730, 335), "shape": "rect"}
+             {"pos": (375, 231, 740, 339), "shape": "rect"}
              ],    # pixel coords on your image
         "greyout": True,   # dims everything outside the highlights
     },
@@ -104,7 +104,7 @@ steps = [
         "instruction": "Place one end of the wire in the Arduino Pin 8. <br>Place the other end in row 12, column A",
         "tip": "The wires are like roads for electricity",
         "highlights": [
-             {"pos":(373, 373, 835, 440), "shape": "rect"}
+             {"pos": (346, 350, 844, 453), "shape": "rect"}
              ],    # pixel coords on your image
         "greyout": True,   # dims everything outside the highlights
     }]

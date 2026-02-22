@@ -14,7 +14,7 @@ tool that shows pixel coordinates as you drag sliders over your image.
 """
 
 import streamlit as st
-from PIL import Image, ImageDraw
+from PIL import Image, ImageDraw, ImageFont
 import io
 import math
 import os
@@ -37,7 +37,9 @@ def draw_step_overlay(image_path: str, step: dict, step_number: int, total_steps
                    direction options: "up", "down", "left", "right"
       greyout      bool — dim everything outside the highlighted areas (default False)
       color        "#RRGGBB" — active highlight color override
-      label        str — text label (placed near first highlight)
+      label        str OR dict — text label (placed near first highlight)
+                   Simple: "LED +"
+                   Advanced: {"text": "LED +", "offset_x": 30, "offset_y": -14, "font_size": 16}
 
     Legacy keys still work unchanged:
       highlight    (x, y)        — single circle (old format)
@@ -155,29 +157,86 @@ def draw_step_overlay(image_path: str, step: dict, step_number: int, total_steps
              by - head_len * math.sin(angle + head_ang)),
         ], fill=COLORS["arrow"])
 
-    # ── TEXT LABEL (near first highlight) ─────────────────────────────────
-    label_pos = None
+    # ── TEXT LABELS (near highlights or custom positions) ────────────────────
+
+    # Determine base highlight position (first highlight if exists)
+    base_label_pos = None
     if raw_highlights:
         first = raw_highlights[0]
         pos   = first["pos"]
-        if first.get("shape") == "rect":
-            label_pos = (pos[0], pos[1])
-        else:
-            label_pos = (pos[0], pos[1])
-    elif "label" in step and "highlight" in step:
-        label_pos = step["highlight"]
+        base_label_pos = (pos[0], pos[1])
+    elif "highlight" in step:
+        base_label_pos = step["highlight"]
 
-    if "label" in step and label_pos:
-        lx = label_pos[0] + 30
-        ly = label_pos[1] - 14
-        label   = step["label"]
-        text_w  = len(label) * 7 + 14
+    # Normalize labels to a list
+    labels = []
+
+    if "labels" in step:
+        labels = step["labels"]  # preferred new format
+    elif "label" in step:
+        labels = [step["label"]]  # backward compatibility
+
+    for label_item in labels:
+
+        # ── Parse label ───────────────────────────────────────────────────────
+
+        if isinstance(label_item, dict):
+            label_text = label_item.get("text", "")
+            offset_x   = label_item.get("offset_x", 30)
+            offset_y   = label_item.get("offset_y", -14)
+            font_size  = label_item.get("font_size", 14)
+            custom_pos = label_item.get("pos")  # optional override
+        else:
+            label_text = label_item
+            offset_x   = 30
+            offset_y   = -14
+            font_size  = 14
+            custom_pos = None
+
+        # ── Determine label position ─────────────────────────────────────────
+
+        if custom_pos:
+            lx = custom_pos[0]
+            ly = custom_pos[1]
+        elif base_label_pos:
+            lx = base_label_pos[0] + offset_x
+            ly = base_label_pos[1] + offset_y
+        else:
+            continue  # No valid position
+
+        # ── Load font ─────────────────────────────────────────────────────────
+
+        try:
+            font = ImageFont.truetype(
+                "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf",
+                font_size
+            )
+        except:
+            try:
+                font = ImageFont.truetype(
+                    "/System/Library/Fonts/Helvetica.ttc",
+                    font_size
+                )
+            except:
+                font = ImageFont.load_default()
+
+        # ── Calculate text box ───────────────────────────────────────────────
+
+        bbox = draw.textbbox((0, 0), label_text, font=font)
+        text_w = bbox[2] - bbox[0] + 14
+        text_h = bbox[3] - bbox[1] + 8
+
+        # ── Draw background ───────────────────────────────────────────────────
+
         draw.rounded_rectangle(
-            [(lx-6, ly-4), (lx+text_w, ly+20)],
+            [(lx - 6, ly - 4), (lx + text_w, ly + text_h)],
             radius=6,
             fill=COLORS["label_bg"],
         )
-        draw.text((lx, ly), label, fill=COLORS["label_fg"])
+
+        draw.text((lx, ly), label_text, fill=COLORS["label_fg"], font=font)
+
+    # ── Final image ───────────────────────────────────────────────────────────
 
     final = Image.alpha_composite(img, overlay)
     buf   = io.BytesIO()
@@ -684,7 +743,7 @@ if __name__ == "__main__":
 
     demo_steps = [
         {
-            # Legacy single highlight — still works exactly as before
+            # Simple string label (legacy format)
             "instruction": "Find the two long rails running down the sides of your breadboard. The red strip is Power (+) and the blue strip is Ground (−).",
             "tip": "Always connect power and ground first — it makes everything else easier to think about!",
             "highlight": (24, 80),
@@ -693,18 +752,22 @@ if __name__ == "__main__":
             "greyout": True,
         },
         {
-            # Single circle highlight with greyout
+            # Dict label with custom position and size
             "instruction": "Place your LED so the LONG leg (anode +) goes into row 10, column E, and the SHORT leg into row 10, column D.",
             "tip": "Not sure which leg is longer? Look closely — one is slightly longer. That's the positive (+) leg.",
             "highlights": [
                 {"pos": (310, 145), "shape": "circle"},
             ],
-            "label": "LED here",
+            "label": {
+                "text": "LED here",
+                "offset_x": 40,
+                "offset_y": -20,
+                "font_size": 18
+            },
             "color": "#f5a623",
             "greyout": True,
         },
         {
-            # Rect highlight around a component area
             "instruction": "Insert a 330Ω resistor between row 10, column B and row 16, column B. It acts like a speed bump to protect your LED!",
             "tip": "Resistors don't have a direction — either way round is fine.",
             "highlights": [
@@ -715,7 +778,6 @@ if __name__ == "__main__":
             "greyout": True,
         },
         {
-            # Multiple circles — both ends of a wire
             "instruction": "Connect a RED jumper wire from the (+) power rail to row 16, column A. This brings power to your resistor.",
             "highlights": [
                 {"pos": (24, 235),  "shape": "circle"},
@@ -726,7 +788,6 @@ if __name__ == "__main__":
             "greyout": True,
         },
         {
-            # Arrow pointing at a connection point
             "instruction": "Connect a BLACK jumper wire from row 10, column C to the (−) ground rail. This completes the loop!",
             "highlights": [
                 {"pos": (310, 145), "shape": "arrow", "direction": "up"},
@@ -736,7 +797,6 @@ if __name__ == "__main__":
             "greyout": True,
         },
         {
-            # No greyout on final step — show the full completed board
             "instruction": "Plug in your 9V battery — red clip to (+) rail, black clip to (−) rail. Your LED should glow! 🎉",
             "tip": "If it doesn't light up: check the LED is the right way round, and make sure all legs are fully pushed into the holes.",
             "highlights": [

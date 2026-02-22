@@ -56,46 +56,81 @@ Press this button to start the launch sequence — no going back once it’s pus
 🔔 **Buzzer** (The Launch Alarm!)  
 Sounds the warning alarm so everyone knows the rocket is about to lift off!
 """)
+from utils.assembly_guide import assembly_guide, coordinate_picker
+steps = [
+    {
+        "instruction": "Activate the launch button!!",
+        "tip": "Press the next button for a step by step guide",  
+    },
+    {
+        "instruction": "Place the buzzer long leg in row 12, column E. <br>Place the buzzer short leg in row 12, column F",
+        "tip": "This is the launch alarm",
+        "highlights": [
+             {"pos": (823, 287), "shape": "circle", "radius": 55},
+             {"pos": (846, 565), "shape": "circle", "radius": 55},
+             {"pos": (882, 55), "shape": "circle", "radius": 55}
+             ],    # pixel coords on your image
+        "greyout": True,   # dims everything outside the highlights
+        #"label": "LED +",
+    },
+    {
+        "instruction": "Place the button onto the breadboard. <br>There are 4 legs on the button, each one goes to its own spot on the breadboard. <br>Button leg → row 18 column e <br>Button leg → row 18 column f <br>Button leg → row 20 column e <br>Button leg → row 20 column f",
+        "tip": "The button will control the launch alarm",
+        "highlights": [
+             {"pos": (905, 224, 1010, 360), "shape": "rect"}
+             ],    # pixel coords on your image
+        "greyout": True,   # dims everything outside the highlights
+    },
+    {
+        "instruction": "Place one end of the wire in the Arduino Pin GND. <br>Place the other end in the negative / - rail",
+        "tip": "The wires are like roads for electricity",
+        "highlights": [
+             {"pos": (352, 91, 648, 270), "shape": "rect"}
+             ],    # pixel coords on your image
+        "greyout": True,   # dims everything outside the highlights
+    },
+    {
+        "instruction": "Place one end of the wire in the Arduino Pin 8. <br>Place the other end in row 12 column A",
+        "tip": "This wire sends the power to our launch alarm",
+        "highlights": [
+             {"pos": (376, 353, 846, 452), "shape": "rect"}
+             ],    # pixel coords on your image
+        "greyout": True,   # dims everything outside the highlights
+    },
+    {
+        "instruction": "Place one end of the wire in the Arduino Pin 2. <br>Place the other end in row 18 column A",
+        "tip": "this wire is listening for the button to be pressed",
+        "highlights": [
+             {"pos": (905, 387, 960, 543), "shape": "rect"},
+             {"pos": (369, 469, 924, 542), "shape": "rect"}
+             ],    # pixel coords on your image
+        "greyout": True,   # dims everything outside the highlights
+    },
+    {
+        "instruction": "Place one end of the wire in row 12 column J  . <br>Place the other end in the negative / - rail",
+        "tip": "Wires are like roads for electicity.  A circuit is like a race track for electricity! We must make a loop. This wire connects our circuit back to the Arduino",
+        "highlights": [
+             {"pos": (673, 100, 844, 219), "shape": "rect"}
+             ],    # pixel coords on your image
+        "greyout": True,   # dims everything outside the highlights
+    },
+    {
+        "instruction": "Place one end of the wire in row 20 column J. <br>Place the other end in the negative / - rail",
+        "tip": "This wire completes our loop.  it connects our button back to the Arduino",
+        "highlights": [
+             {"pos": (928, 95, 1013, 224), "shape": "rect"}
+             ],    # pixel coords on your image
+        "greyout": True,   # dims everything outside the highlights
+    }]
+tab1, tab2 = st.tabs(["**📋 Quick Overview**", "**🔧 Step-by-Step**"])  
 
-hover_zoom_at_cursor(circuit_layout, height=300, zoom_factor=2.0, key="circuit1")
+with tab1:
+  
+  hover_zoom_at_cursor(circuit_layout, zoom_factor=2.0, key="circuit1")
 
-st.info("👇 Need help? Click below for detailed instructions")
+with tab2:
 
-with st.expander("📋 Step-by-step wiring guide"):
-
-    st.markdown("""
-### 🔌 Power Setup
-
-- Arduino **GND** → breadboard **negative (–) rail**  
-  (All return wires go here — the spaceship’s ground system)
-
-### 🔊 Rocket Buzzer
-
-**Parts**
-
-- Buzzer positive (+) → row 12, column **e**  
-- Buzzer negative (–) → row 12, column **f**
-
-**Wires**
-
-- Arduino **pin 8** → row 12 **a**  
-- Wire from row 12 **j** → negative (–) rail
-
-### 🔘 Launch Button
-
-**Parts**
-
-- Button leg → row 18 **e**  
-- Button leg → row 18 **f**
-- Button leg → row 20 **e**  
-- Button leg → row 20 **f**
-
-**Wires**
-
-- Arduino **pin 2** → row 18 **a**  
-- Wire from row 20 **j** → negative (–) rail
-                """)
-
+  assembly_guide("graphics/project_four_circuit.png", steps, "Project 4: Space Station Launch Button")
 
 code1,code2 = st.columns(2)
 
