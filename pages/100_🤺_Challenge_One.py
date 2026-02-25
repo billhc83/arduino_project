@@ -63,7 +63,7 @@ with col2:
 Make the LED turn **ON** for 1 second, then **OFF** for 1 second. It should keep doing this forever so everyone knows the castle is safe! 🏰✨
     """)
 
-    hover_zoom_at_cursor(challenge_circuit_layout, width=300, height=300, zoom_factor=2.0, key="circuit1")
+    hover_zoom_at_cursor(challenge_circuit_layout,height=300, zoom_factor=2.0, key="circuit1")
 
 
 # --- NAVIGATION ---

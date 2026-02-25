@@ -82,7 +82,7 @@ st.title("""
    """)
 
 from utils.assembly_guide import assembly_guide, coordinate_picker
-
+coordinate_picker("graphics/project_one_circuit.png")
 steps = [
     {
         "instruction": "Lets build our first project",

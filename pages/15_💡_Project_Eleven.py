@@ -2,9 +2,6 @@ import streamlit as st
 from PIL import Image
 from utils.utils import hover_zoom_at_cursor, complete_step_and_continue, get_automated_pages
 
-# --- PAGE CONFIG ---
-# (Optionally add st.set_page_config here if not in main.py)
-
 # --- ASSETS ---
 manual_car_layout = Image.open("graphics/project_eleven_circuit.png")
 
