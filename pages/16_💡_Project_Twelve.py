@@ -3,7 +3,7 @@ import os
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 import streamlit as st
 from components.arduino_blocks import arduino_block_coder
-
+from components.contents import DRAWER_CONTENT
 
 st.markdown("""
 # ✈️ Project – Engine Start Sequence
@@ -153,57 +153,10 @@ Your job is not to build yet — your job is to **notice and understand**.
 When you know where everything connects, you know exactly what your code must control. 🚀
 """)
 
-st.set_page_config(page_title="My Arduino Tool", layout= "wide")
+st.set_page_config(layout= "wide")
 st.title("Build Your Sketch")
 
-arduino_block_coder(preset = 'Blink') 
-
-with st.expander("👀 Need a Hint? Click here if you're stuck."):
-
-    st.markdown("""
-It’s okay to get stuck. That means your brain is growing. 💪
-
----
-
-### 👀 First: Think About This
-
-- What controls the whole system?
-- Can the engine run if the switch is OFF?
-- Should the button control everything… or just the engine?
-- What should happen when the switch turns OFF?
-
-Take a moment. Look at your blocks again.
-
----
-
-### 🛠️ Still Stuck?
-
-Remember:
-
-- The switch is the **boss** of the whole system.
-- When the switch is OFF → nothing should run.
-- When the switch is ON → the system is ready.
-- The button only starts the engine.
-- The engine keeps running until the switch turns OFF.
-
-Check your logic carefully.
-
----
-
-### 🧩 Show Me the Structure
-
-Here is the shape your logic might follow:
-
-IF switch is OFF  
-  turn everything OFF  
-
-IF switch is ON  
-  (system ready)  
-
-  IF button pressed  
-    engine ON  
-
-This shows the flow.
-
-You still need to build it with your own blocks. 🚀
-""")
+arduino_block_coder(
+    preset = 'engine_start',
+    drawer_content= DRAWER_CONTENT.get("engine_start") 
+)
