@@ -144,26 +144,26 @@ def parse_sketch(sketch_code):
 PRESETS = {
     'engine_start': """
 void setup() {
-  pinMode(2, INPUT);   // Arm switch
-  pinMode(3, INPUT);   // Engage button
-  pinMode(9, OUTPUT);  // Engine light
-  pinMode(10, OUTPUT); // Engine buzzer
+  pinMode(9, INPUT);   // Arm switch
+  pinMode(7, INPUT);   // Engage button
+  pinMode(2, OUTPUT);  // Engine light
+  pinMode(5, OUTPUT); // Engine buzzer
 }
 
 void loop() {
 
-  if (digitalRead(2) == HIGH) {   // Switch ON
+  if (digitalRead(9) == LOW) {   // Switch ON
 
-    digitalWrite(9, HIGH);        // Light ON (armed)
+    digitalWrite(2, HIGH);        // Light ON (armed)
 
-    if (digitalRead(3) == HIGH) {
-      digitalWrite(10, HIGH);     // Start engine
+    if (digitalRead(7) == LOW) {
+      digitalWrite(5, HIGH);     // Start engine
     }
 
   } else {                        // Switch OFF
 
-    digitalWrite(9, LOW);         // Light OFF
-    digitalWrite(10, LOW);        // Engine OFF (reset)
+    digitalWrite(2, LOW);         // Light OFF
+    digitalWrite(2, LOW);        // Engine OFF (reset)
 
   }
 }
@@ -192,9 +192,20 @@ void loop() {
 }
 
 
+# ── Pin reference lists ───────────────────────────────────────────────
+# Add your own project keys and component lists here.
+# These appear as a reference-only dropdown on every pinMode block.
+# The user can pick an item as a label hint or ignore it entirely.
+
+PIN_REFS = {
+    "engine_start": ["Switch", "Button", "LED", "Buzzer"],
+    "serial_hello": ["TX LED", "RX LED"],
+    "button_read":  ["button", "LED"],
+}
+
 # ── Component ─────────────────────────────────────────────────────────
 
-def arduino_block_coder(height=550, preset=None, drawer_content=None):
+def arduino_block_coder(height=550, preset=None, drawer_content=None, pin_refs=None):
 
     # Guard: if a string is passed positionally treat it as preset
     if isinstance(height, str):
@@ -237,11 +248,10 @@ def arduino_block_coder(height=550, preset=None, drawer_content=None):
         initial_js = "SECTIONS.global=" + gb + ";SECTIONS.setup=" + sb + ";SECTIONS.loop=" + lb + ";"
     else:
         initial_js = ""
-
     css = (
         "* { box-sizing:border-box; margin:0; padding:0; }"
         "html, body { width:100%; height:" + str(height) + "px; overflow:hidden;"
-        "  background:#f6f8fa; font-family:'Courier New',monospace; color:#24292f; }"
+        "  background:#f6f8fa; font-family: 'Nunito', 'Quicksand', system-ui, sans-serif; background: #f4f8ff; color:#24292f; }"
         "#palette { width:110px; flex-shrink:0; background:#ffffff;"
         "  border-right:1px solid #d0d7de; display:flex; flex-direction:column;"
         "  padding:6px; gap:4px; overflow-y:auto; }"
@@ -249,32 +259,33 @@ def arduino_block_coder(height=550, preset=None, drawer_content=None):
         "#palette::-webkit-scrollbar-thumb { background:#d0d7de; }"
         ".pal-title { font-size:9px; color:#57606a; text-transform:uppercase;"
         "  letter-spacing:.06em; padding:2px 0 4px 0; border-bottom:1px solid #d0d7de; margin-bottom:2px; }"
-        ".block-btn { width:100%; padding:5px 6px; border-radius:5px; border:1px solid #d0d7de;"
-        "  background:#f6f8fa; cursor:pointer; font-size:10px; color:#24292f;"
+        ".block-btn { width:100%; padding:5px 6px; border-radius:14px; border:none; box-shadow:0 4px 10px rgba(0,0,0,0.08);"
+        "  background:#f6f8fa; cursor:pointer; font-size:14px; font-weight:600; color:#24292f;"
         "  font-family:inherit; text-align:left; }"
         ".block-btn:hover { border-color:#0969da; color:#0969da; background:#ddf4ff; }"
         "#workspace { flex:1; display:flex; flex-direction:column; gap:4px;"
         "  padding:6px 6px 10px 6px; overflow:hidden; min-width:0; }"
-        ".section { flex:1; border:2px solid #d0d7de; border-radius:7px;"
-        "  background:#ffffff; padding:5px 7px; cursor:pointer; overflow-y:auto; min-height:0; }"
+        ".section { flex:0 0 36px; border:2px solid #dbeafe; border-radius:14px;"
+        "  box-shadow:0 4px 12px rgba(0,0,0,0.06); background:#ffffff;"
+        "  display:flex; flex-direction:column; overflow:hidden;"
+        "  transition:flex 0.3s ease, box-shadow 0.2s ease; min-height:0; }"
+        ".section.expanded { flex:1 1 0; box-shadow:0 8px 24px rgba(0,0,0,0.1); }"
         ".section::-webkit-scrollbar { width:3px; }"
         ".section::-webkit-scrollbar-thumb { background:#d0d7de; }"
-        ".section h3 { font-size:9px; font-weight:600; letter-spacing:.06em; text-transform:uppercase;"
-        "  color:#57606a; pointer-events:none; user-select:none; margin-bottom:3px; }"
-        ".s-global.active { border-color:#0969da; background:#ddf4ff; }"
-        ".s-global.active h3 { color:#0969da; }"
-        ".s-setup.active  { border-color:#1a7f37; background:#dafbe1; }"
-        ".s-setup.active  h3 { color:#1a7f37; }"
-        ".s-loop.active   { border-color:#9a6700; background:#fff8c5; }"
-        ".s-loop.active   h3 { color:#9a6700; }"
+        ".s-global.active { border-color:#0969da; }"
+        ".s-global.active .section-header { background:linear-gradient(135deg,#0969da,#54aeff); }"
+        ".s-setup.active  { border-color:#1a7f37; }"
+        ".s-setup.active  .section-header { background:linear-gradient(135deg,#1a7f37,#4ac26b); }"
+        ".s-loop.active   { border-color:#9a6700; }"
+        ".s-loop.active   .section-header { background:linear-gradient(135deg,#9a6700,#d4a72c); }"
         ".ws-block { display:flex; align-items:center; flex-wrap:wrap; gap:4px;"
-        "  background:#f6f8fa; border:1px solid #d0d7de; border-radius:5px;"
-        "  padding:3px 6px; margin-bottom:3px; }"
-        ".blk-name { font-size:9px; font-weight:bold; color:#0969da; min-width:60px; }"
+        "  background:#f6f8fa; border: none; border-radius:18px;"
+        "  padding:14px 16px; margin-bottom:3px; box-shadow:0 6px 14px rgba(0,0,0,0.08); }"
+        ".blk-name { font-size:16px; font-weight:800; color:#0969da; min-width:60px; }"
         ".blk-field { display:flex; flex-direction:column; font-size:8px; }"
         ".blk-field label { color:#57606a; margin-bottom:1px; }"
-        ".blk-input { font-size:9px; padding:2px 3px; width:64px; background:#ffffff;"
-        "  color:#24292f; border:1px solid #d0d7de; border-radius:3px; font-family:inherit; }"
+        ".blk-input { font-size:14px; padding:6px 8px; width:120px; background:#ffffff;"
+        "  color:#24292f; border:2px solid #e5e7eb; border-radius:10px; font-family:inherit; }"
         ".blk-input:focus { outline:none; border-color:#0969da; }"
         ".act { background:none; border:1px solid #d0d7de; color:#57606a; cursor:pointer;"
         "  font-size:9px; padding:1px 3px; border-radius:3px; }"
@@ -285,15 +296,15 @@ def arduino_block_coder(height=550, preset=None, drawer_content=None):
         ".if-header    { border-radius:5px 5px 0 0; }"
         ".elseif-header { border-top:none; }"
         ".else-header   { border-top:none; }"
-        ".if-keyword { font-size:9px; font-weight:bold; color:#cf222e; }"
+        ".if-keyword { font-size:14px; font-weight:bold; color:#cf222e; }"
         ".cond-field { display:flex; flex-direction:column; font-size:8px; }"
         ".cond-field label { color:#57606a; margin-bottom:1px; }"
-        ".cond-input  { font-size:9px; padding:2px 3px; width:100px; background:#ffffff;"
-        "  color:#24292f; border:1px solid #d0d7de; border-radius:3px; font-family:inherit; }"
-        ".cond-select { font-size:9px; padding:2px 3px; width:80px; background:#ffffff;"
-        "  color:#24292f; border:1px solid #d0d7de; border-radius:3px; font-family:inherit; }"
-        ".cond-joiner { font-size:9px; padding:2px 3px; width:46px; background:#ffffff;"
-        "  color:#9a6700; border:1px solid #d4a72c; border-radius:3px; font-family:inherit; }"
+        ".cond-input  { font-size:14px; padding:6px 8px; width:120px; background:#ffffff;"
+        "  color:#24292f; border:2px solid #e5e7eb; border-radius:10px; font-family:inherit; }"
+        ".cond-select { font-size:14px; padding:6px 8px; width:80px; background:#ffffff;"
+        "  color:#24292f; border:2px solid #e5e7eb; border-radius:10px; font-family:inherit; }"
+        ".cond-joiner { font-size:14px; padding:6px 8px; width:55px; background:#ffffff;"
+        "  color:#9a6700; border:2px solid #e5e7eb; border-radius:10px; font-family:inherit; }"
         ".cond-input:focus, .cond-select:focus, .cond-joiner:focus { outline:none; border-color:#cf222e; }"
         ".if-body { border-left:1px dashed #d0d7de; border-right:1px dashed #d0d7de;"
         "  border-bottom:none; padding:4px 4px 4px 60px; min-height:28px; cursor:pointer; }"
@@ -350,12 +361,25 @@ def arduino_block_coder(height=550, preset=None, drawer_content=None):
         ".drawer-tab-panels { flex:1; overflow-y:auto; }"
         ".drawer-tab-panels::-webkit-scrollbar { width:3px; }"
         ".drawer-tab-panels::-webkit-scrollbar-thumb { background:#d0d7de; }"
-        ".drawer-tab-panel { display:none; padding:14px; }"
+        ".drawer-tab-panel { display:none; padding:14px; font-family: 'Inter', sans-serif;}"
         ".drawer-tab-panel.active { display:block; }"
-        ".drawer-tab-panel p { font-size:12px; color:#24292f; line-height:1.8; white-space:pre-wrap; margin-bottom:8px; }"
+        ".drawer-tab-panel p { font-size:16px; color:#24292f; line-height:1.8; white-space:pre-wrap; margin-bottom:8px; }"
         ".drawer-tab-panel img { width:100%; border-radius:5px; border:1px solid #d0d7de; margin-top:8px; }"
         ".drawer-tab-panel code { display:inline-block; background:#f6f8fa; border:1px solid #d0d7de;"
         "  border-radius:3px; padding:2px 6px; font-size:11px; color:#953800; font-family:'Courier New',monospace; }"
+        # === ACCORDION ===
+        ".section-header { cursor:pointer; user-select:none; padding:8px 14px; height:36px;"
+        "  display:flex; align-items:center; justify-content:space-between;"
+        "  font-size:11px; font-weight:800; letter-spacing:0.5px; flex-shrink:0;"
+        "  background:linear-gradient(135deg,#60a5fa,#818cf8); color:white; }"
+        ".section-header h3 { font-size:11px; font-weight:800; letter-spacing:.06em;"
+        "  text-transform:uppercase; color:white; margin:0; pointer-events:none; user-select:none; }"
+        ".section-header .toggle-arrow { font-size:10px; transition:transform 0.25s ease; }"
+        ".section.expanded .section-header .toggle-arrow { transform:rotate(180deg); }"
+        ".section-body { flex:1; overflow-y:auto; padding:5px 7px; min-height:0; }"
+        ".section-body::-webkit-scrollbar { width:3px; }"
+        ".section-body::-webkit-scrollbar-thumb { background:#d0d7de; }"
+        # ================
     )
 
     # ── Build drawer inner HTML ───────────────────────────────────────────
@@ -421,9 +445,18 @@ def arduino_block_coder(height=550, preset=None, drawer_content=None):
         "<button class='block-btn' data-type='ifblock'>if statement</button>"
         "</div>"
         "<div id='workspace'>"
-        "<div class='section s-global' id='gs'><h3>&#127757; Global</h3></div>"
-        "<div class='section s-setup'  id='ss'><h3>&#128295; setup()</h3></div>"
-        "<div class='section s-loop'   id='ls'><h3>&#128257; loop()</h3></div>"
+        "<div class='section s-global' id='gs'>"
+        "  <div class='section-header'><h3>&#127757; Global</h3><span class='toggle-arrow'>&#9660;</span></div>"
+        "  <div class='section-body' id='gs-body'></div>"
+        "</div>"
+        "<div class='section s-setup expanded' id='ss'>"
+        "  <div class='section-header'><h3>&#128295; setup()</h3><span class='toggle-arrow'>&#9660;</span></div>"
+        "  <div class='section-body' id='ss-body'></div>"
+        "</div>"
+        "<div class='section s-loop' id='ls'>"
+        "  <div class='section-header'><h3>&#128257; loop()</h3><span class='toggle-arrow'>&#9660;</span></div>"
+        "  <div class='section-body' id='ls-body'></div>"
+        "</div>"
         "</div>"
         "<div id='codepanel'>"
         "<div id='code-btns'>"
@@ -437,7 +470,19 @@ def arduino_block_coder(height=550, preset=None, drawer_content=None):
         "</div>"
     )
 
+    # Resolve the active pin reference list from the pin_refs parameter.
+    # pin_refs can be a string key from PIN_REFS, or a plain list of strings.
+    if isinstance(pin_refs, str):
+        active_refs = PIN_REFS.get(pin_refs, [])
+    elif isinstance(pin_refs, list):
+        active_refs = pin_refs
+    else:
+        active_refs = []
+    items_js = "[" + ",".join('"' + i.replace('\\', '\\\\').replace('"', '\\"') + '"' for i in active_refs) + "]"
+    pin_refs_js = "var PIN_REFS=" + items_js + ";"
+
     js = (
+        pin_refs_js +
         "function switchTab(btn,panelId){"
         "  var inner=document.getElementById('drawer-inner');"
         "  inner.querySelectorAll('.drawer-tab-btn').forEach(function(b){b.classList.remove('active');});"
@@ -448,10 +493,10 @@ def arduino_block_coder(height=550, preset=None, drawer_content=None):
         "var B={"
         "intvar:{allowed:['global'],inputs:[{t:'text',l:'Name'},{t:'number',l:'Value'}],"
         "  gen:function(p){return 'int '+(p[0]||'myVar')+' = '+(p[1]||0)+';';}},"
-        "pinmode:{allowed:['setup'],inputs:[{t:'text',l:'Pin'},{t:'sel',l:'Mode',o:['OUTPUT','INPUT','INPUT_PULLUP']}],"
-        "  gen:function(p){return 'pinMode('+(p[0]||13)+', '+(p[1]||'OUTPUT')+');';}},"
+        "pinmode:{allowed:['setup'],inputs:[{t:'text',l:'Pin'},{t:'sel',l:'Mode',o:['OUTPUT','INPUT_PULLUP']}],"
+        "  gen:function(p){return 'pinMode('+(p[0])+', '+(p[1])+');';}},"
         "digitalwrite:{allowed:['loop','if'],inputs:[{t:'text',l:'Pin'},{t:'sel',l:'Value',o:['HIGH','LOW']}],"
-        "  gen:function(p){return 'digitalWrite('+(p[0]||13)+', '+(p[1]||'HIGH')+');';}},"
+        "  gen:function(p){return 'digitalWrite('+(p[0])+', '+(p[1])+');';}},"
         "delay:{allowed:['loop','if'],inputs:[{t:'number',l:'ms'}],"
         "  gen:function(p){return 'delay('+(p[0]||1000)+');';}},"
         "serialbegin:{allowed:['setup'],inputs:[{t:'sel',l:'Baud',o:['9600','19200','38400','57600','115200']}],"
@@ -474,10 +519,20 @@ def arduino_block_coder(height=550, preset=None, drawer_content=None):
         "document.addEventListener('click',function(e){"
         "  if(!e.target.closest('.section')&&!e.target.closest('.if-body')&&"
         "     !e.target.closest('.block-btn')&&!e.target.closest('#codepanel'))clearSelection();});"
+        "function expandSection(elId){"
+        "  ['gs','ss','ls'].forEach(function(id){"
+        "    document.getElementById(id).classList.toggle('expanded', id===elId);});}"
         "function setupSection(elId,sName,label){"
         "  var el=document.getElementById(elId);"
-        "  el.addEventListener('click',function(e){"
-        "    if(e.target===el||e.target.tagName==='H3'){e.stopPropagation();setSelection(sName,SECTIONS[sName],label);}});}"
+        "  var hdr=el.querySelector('.section-header');"
+        "  var body=document.getElementById(elId+'-body');"
+        "  hdr.addEventListener('click',function(e){"
+        "    e.stopPropagation();"
+        "    expandSection(elId);"
+        "    setSelection(sName,SECTIONS[sName],label);"
+        "  });"
+        "  body.addEventListener('click',function(e){"
+        "    if(e.target===body){e.stopPropagation();setSelection(sName,SECTIONS[sName],label);}});}"
         "setupSection('gs','global','Global');"
         "setupSection('ss','setup','setup()');"
         "setupSection('ls','loop','loop()');"
@@ -506,7 +561,9 @@ def arduino_block_coder(height=550, preset=None, drawer_content=None):
         "    var el=document.getElementById(id);"
         "    var sn=id==='gs'?'global':id==='ss'?'setup':'loop';"
         "    var base='section s-'+(id==='gs'?'global':id==='ss'?'setup':'loop');"
-        "    el.className=(sel&&sel.targetArr===SECTIONS[sn])?base+' active':base;});"
+        "    var isExpanded=el.classList.contains('expanded');"
+        "    el.className=(sel&&sel.targetArr===SECTIONS[sn])?base+' active':base;"
+        "    if(isExpanded)el.classList.add('expanded');});"
         "  genCode();}"
         "function collectAncestorArrays(){"
         "  var anc=[];if(!sel)return anc;"
@@ -522,9 +579,9 @@ def arduino_block_coder(height=550, preset=None, drawer_content=None):
         "  return walkDeep(ifBlock.ifbody)||ifBlock.elseifs.some(function(ei){return walkDeep(ei.body);})||"
         "         (ifBlock.elsebody?walkDeep(ifBlock.elsebody):false);}"
         "function renderSection(elId,sName,anc){"
-        "  var sec=document.getElementById(elId);"
-        "  sec.querySelectorAll('.ws-block,.if-block').forEach(function(e){e.remove();});"
-        "  SECTIONS[sName].forEach(function(block,idx){sec.appendChild(renderBlock(block,idx,SECTIONS[sName],sName,sName,anc));});}"
+        "  var body=document.getElementById(elId+'-body');"
+        "  body.querySelectorAll('.ws-block,.if-block').forEach(function(e){e.remove();});"
+        "  SECTIONS[sName].forEach(function(block,idx){body.appendChild(renderBlock(block,idx,SECTIONS[sName],sName,sName,anc));});}"
         "function renderBlock(block,idx,parentArr,section,pathStr,anc){"
         "  if(block.type==='ifblock')return renderIfBlock(block,idx,parentArr,section,pathStr,anc);"
         "  return renderActionBlock(block,idx,parentArr);}"
@@ -544,6 +601,16 @@ def arduino_block_coder(height=550, preset=None, drawer_content=None):
         "    el.addEventListener('click',function(e){e.stopPropagation();});"
         "    el.addEventListener('input',function(e){e.stopPropagation();block.params[j]=e.target.value;genCode();});"
         "    f.appendChild(el);d.appendChild(f);});"
+        "  if(block.type==='pinmode'){"
+        "    var rf=document.createElement('div');rf.className='blk-field';"
+        "    var rl=document.createElement('label');rl.textContent='Ref';rf.appendChild(rl);"
+        "    var rs=document.createElement('select');rs.className='blk-input';"
+        "    var blank=document.createElement('option');blank.value='';blank.textContent='';rs.appendChild(blank);"
+        "    PIN_REFS.forEach(function(item){"
+        "      var o=document.createElement('option');o.value=item;o.textContent=item;rs.appendChild(o);});"
+        "    rs.addEventListener('click',function(e){e.stopPropagation();});"
+        "    rs.addEventListener('change',function(e){e.stopPropagation();});"
+        "    rf.appendChild(rs);d.appendChild(rf);}"
         "  function mkb(ic,fn){var bt=document.createElement('button');bt.className='act';bt.textContent=ic;"
         "    bt.addEventListener('click',function(e){e.stopPropagation();fn();});return bt;}"
         "  d.appendChild(mkb('\\u2191',function(){if(idx>0){var t=parentArr[idx-1];parentArr[idx-1]=parentArr[idx];parentArr[idx]=t;render();}}));"
@@ -619,7 +686,7 @@ def arduino_block_coder(height=550, preset=None, drawer_content=None):
         "  var lb=document.createElement('label');lb.textContent=labelText;f.appendChild(lb);"
         "  var el;"
         "  if(type==='opsel'){el=document.createElement('select');el.className='cond-select';"
-        "    [['==','equals'],['!=','not equals'],['>','greater than'],['<','less than'],['>=','>='],['<=','<=']].forEach(function(o){"
+        "    [['==','equals'],['!=','not equals'],['>','greater than'],['<','less than'],['>=','greater or equal'],['<=','less than or equal']].forEach(function(o){"
         "      var opt=document.createElement('option');opt.value=o[0];opt.textContent=o[1];el.appendChild(opt);});"
         "    el.value=obj[labelText];"
         "  }else if(type==='joinsel'){el=document.createElement('select');el.className='cond-joiner';"
@@ -687,6 +754,7 @@ def arduino_block_coder(height=550, preset=None, drawer_content=None):
 
     html = (
         "<!DOCTYPE html><html><head><meta charset='UTF-8'>"
+        "<link href='https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;800&display=swap' rel='stylesheet'>"
         "<style>" + css + "</style>"
         "</head><body>"
         + body +

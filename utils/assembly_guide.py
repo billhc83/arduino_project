@@ -34,7 +34,10 @@ def draw_step_overlay(image_path: str, step: dict, step_number: int, total_steps
                      {"pos": (x, y),              "shape": "circle"}   — single hole/pin
                      {"pos": (x1, y1, x2, y2),    "shape": "rect"}    — component area
                      {"pos": (x, y),              "shape": "arrow", "direction": "down"} — arrow only
+                     {"pos": [(x1,y1), (x2,y2), ...], "shape": "line", "width": 20} — wire path
+                     {"pos": [(x1,y1), (x2,y2), ...], "shape": "polyline", "width": 20} — multi-segment path
                    direction options: "up", "down", "left", "right"
+                   width: line thickness in pixels (default 20)
       greyout      bool — dim everything outside the highlighted areas (default False)
       color        "#RRGGBB" — active highlight color override
       label        str OR dict — text label (placed near first highlight)
@@ -100,6 +103,54 @@ def draw_step_overlay(image_path: str, step: dict, step_number: int, total_steps
                     radius=12,
                     fill=(0, 0, 0, 0),
                 )
+            elif shape in ("line", "polyline"):
+                # Draw thick line cutout for wire paths
+                points = pos  # list of (x, y) tuples
+                line_width = hl.get("width", 20) + pad * 2
+                
+                # Draw line segments with round caps
+                for i in range(len(points) - 1):
+                    x1, y1 = points[i]
+                    x2, y2 = points[i + 1]
+                    
+                    # PIL doesn't have thick lines with proper joins, so we'll draw
+                    # a rectangle rotated along the line path
+                    import math
+                    dx = x2 - x1
+                    dy = y2 - y1
+                    length = math.sqrt(dx*dx + dy*dy)
+                    
+                    if length > 0:
+                        # Draw thick line as polygon
+                        angle = math.atan2(dy, dx)
+                        half_w = line_width / 2
+                        
+                        # Four corners of the rectangle
+                        cos_a = math.cos(angle)
+                        sin_a = math.sin(angle)
+                        
+                        perp_x = -sin_a * half_w
+                        perp_y = cos_a * half_w
+                        
+                        poly = [
+                            (x1 + perp_x, y1 + perp_y),
+                            (x1 - perp_x, y1 - perp_y),
+                            (x2 - perp_x, y2 - perp_y),
+                            (x2 + perp_x, y2 + perp_y),
+                        ]
+                        vd.polygon(poly, fill=(0, 0, 0, 0))
+                        
+                    # Draw round caps at each point
+                    vd.ellipse([
+                        (x1 - line_width/2, y1 - line_width/2),
+                        (x1 + line_width/2, y1 + line_width/2)
+                    ], fill=(0, 0, 0, 0))
+                    
+                    if i == len(points) - 2:  # Last segment, draw end cap
+                        vd.ellipse([
+                            (x2 - line_width/2, y2 - line_width/2),
+                            (x2 + line_width/2, y2 + line_width/2)
+                        ], fill=(0, 0, 0, 0))
             else:
                 cx, cy = pos[0], pos[1]
                 # Use radius from highlight dict, add padding for greyout window
@@ -534,18 +585,27 @@ def coordinate_picker(image_path: str):
         img.save(buffered, format="PNG")
         img_b64 = base64.b64encode(buffered.getvalue()).decode()
 
-        mode = st.radio("Pick mode:", ["Circle (click)", "Rectangle (drag)"], horizontal=True, key="picker_mode")
+        mode = st.radio("Pick mode:", ["Circle (click)", "Rectangle (drag)", "Line/Polyline (multi-click)"], horizontal=True, key="picker_mode")
         
-        if mode == "Circle (click)":
-            circle_radius = st.number_input("Circle radius (px):", min_value=10, max_value=100, value=25, step=5, key="circle_r")
-        else:
-            circle_radius = 25  # not used in rect mode
+        col1, col2 = st.columns(2)
+        with col1:
+            if mode == "Circle (click)":
+                circle_radius = st.number_input("Circle radius (px):", min_value=10, max_value=100, value=25, step=5, key="circle_r")
+            else:
+                circle_radius = 25
+        with col2:
+            if mode == "Line/Polyline (multi-click)":
+                line_width = st.number_input("Line width (px):", min_value=5, max_value=100, value=20, step=5, key="line_w")
+            else:
+                line_width = 20
         
         st.caption(f"Image size: {w} × {h} px")
         if mode == "Circle (click)":
             st.info("👆 **Click** anywhere on the image below to capture circle coordinates. The snippet will appear below and copy to your clipboard.")
-        else:
+        elif mode == "Rectangle (drag)":
             st.info("👆 **Click and drag** on the image to draw a rectangle. Release to capture. The snippet will appear below.")
+        else:
+            st.info("👆 **Click** to add points to your line path. **Double-click** or press **Enter** when done. The snippet will appear below and copy to your clipboard.")
 
         # HTML canvas for interactive picking
         html_code = f"""<!DOCTYPE html>
@@ -578,11 +638,25 @@ body {{ margin: 0; padding: 20px; background: #fafafa; font-family: monospace; }
     margin-top: 8px;
     border-left: 3px solid #2196F3;
 }}
+#instructions {{
+    margin-top: 10px;
+    padding: 8px 12px;
+    background: #fff3cd;
+    border: 1px solid #ffc107;
+    border-radius: 6px;
+    font-size: 12px;
+    color: #856404;
+}}
 </style>
 </head>
 <body>
 <div class="container">
     <canvas id="canvas" width="{w}" height="{h}"></canvas>
+    <div id="instructions" style="display:none;">
+        Points: <span id="pointCount">0</span> | 
+        <button onclick="finishLine()" style="padding:4px 12px;cursor:pointer;">Finish Line</button> |
+        <button onclick="clearLine()" style="padding:4px 12px;cursor:pointer;">Clear</button>
+    </div>
     <div id="output">
         <div style="color: #2e7d32; font-weight: 600;">✓ Copied to clipboard!</div>
         <div class="coords" id="coordText"></div>
@@ -593,23 +667,20 @@ const canvas = document.getElementById('canvas');
 const ctx = canvas.getContext('2d');
 const output = document.getElementById('output');
 const coordText = document.getElementById('coordText');
+const instructions = document.getElementById('instructions');
+const pointCount = document.getElementById('pointCount');
 const mode = "{mode}";
-
-const img = new Image();
-img.onload = function() {{
-    ctx.drawImage(img, 0, 0);
-}};
-img.src = "data:image/png;base64,{img_b64}";
 
 let isDrawing = false;
 let startX, startY;
 let baseImage = null;
 
-// Save base image once loaded
+const img = new Image();
 img.onload = function() {{
     ctx.drawImage(img, 0, 0);
     baseImage = ctx.getImageData(0, 0, canvas.width, canvas.height);
 }};
+img.src = "data:image/png;base64,{img_b64}";
 
 function copyToClipboard(text) {{
     navigator.clipboard.writeText(text).then(() => {{
@@ -646,7 +717,7 @@ if (mode === "Circle (click)") {{
         const snippet = `{{"pos": (${{x}}, ${{y}}), "shape": "circle", "radius": ${{radius}}}}`;
         copyToClipboard(snippet);
     }});
-}} else {{
+}} else if (mode === "Rectangle (drag)") {{
     // Rectangle drag mode
     canvas.addEventListener('mousedown', function(e) {{
         const rect = canvas.getBoundingClientRect();
@@ -692,6 +763,98 @@ if (mode === "Circle (click)") {{
         if (isDrawing) {{
             isDrawing = false;
             if (baseImage) ctx.putImageData(baseImage, 0, 0);
+        }}
+    }});
+}} else {{
+    // Line/Polyline mode - collect multiple points
+    let linePoints = [];
+    let lastClickTime = 0;
+    
+    instructions.style.display = 'block';
+    
+    function drawLine() {{
+        if (baseImage) ctx.putImageData(baseImage, 0, 0);
+        
+        if (linePoints.length === 0) return;
+        
+        // Draw line segments
+        ctx.strokeStyle = '#2196F3';
+        ctx.lineWidth = {line_width};
+        ctx.lineCap = 'round';
+        ctx.lineJoin = 'round';
+        
+        ctx.beginPath();
+        ctx.moveTo(linePoints[0].x, linePoints[0].y);
+        for (let i = 1; i < linePoints.length; i++) {{
+            ctx.lineTo(linePoints[i].x, linePoints[i].y);
+        }}
+        ctx.stroke();
+        
+        // Draw points
+        linePoints.forEach((pt, idx) => {{
+            ctx.fillStyle = idx === 0 ? '#4CAF50' : '#2196F3';
+            ctx.beginPath();
+            ctx.arc(pt.x, pt.y, 6, 0, 2 * Math.PI);
+            ctx.fill();
+            
+            // Label point number
+            ctx.fillStyle = '#fff';
+            ctx.font = 'bold 10px sans-serif';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText(idx + 1, pt.x, pt.y);
+        }});
+        
+        pointCount.textContent = linePoints.length;
+    }}
+    
+    window.finishLine = function() {{
+        if (linePoints.length < 2) {{
+            alert('Need at least 2 points for a line');
+            return;
+        }}
+        
+        const pointsStr = linePoints.map(p => `(${{p.x}}, ${{p.y}})`).join(', ');
+        const snippet = `{{"pos": [${{pointsStr}}], "shape": "polyline", "width": {line_width}}}`;
+        copyToClipboard(snippet);
+        
+        // Clear for next line
+        linePoints = [];
+        if (baseImage) ctx.putImageData(baseImage, 0, 0);
+        pointCount.textContent = 0;
+    }};
+    
+    window.clearLine = function() {{
+        linePoints = [];
+        if (baseImage) ctx.putImageData(baseImage, 0, 0);
+        pointCount.textContent = 0;
+    }};
+    
+    canvas.addEventListener('click', function(e) {{
+        const rect = canvas.getBoundingClientRect();
+        const x = Math.round((e.clientX - rect.left) * (canvas.width / rect.width));
+        const y = Math.round((e.clientY - rect.top) * (canvas.height / rect.height));
+        
+        const now = Date.now();
+        const timeSinceLastClick = now - lastClickTime;
+        lastClickTime = now;
+        
+        // Double-click detection (within 300ms)
+        if (timeSinceLastClick < 300 && linePoints.length >= 2) {{
+            finishLine();
+            return;
+        }}
+        
+        linePoints.push({{x, y}});
+        drawLine();
+    }});
+    
+    // Keyboard support
+    document.addEventListener('keydown', function(e) {{
+        if (e.key === 'Enter' && linePoints.length >= 2) {{
+            finishLine();
+        }} else if (e.key === 'Escape') {{
+            clearLine();
         }}
     }});
 }}
