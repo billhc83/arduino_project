@@ -112,16 +112,26 @@ def parse_blocks(code):
         i = semi + 1
         m = re.match(r'int\s+(\w+)\s*=\s*(-?\d+)\s*;', line)
         if m: blocks.append({'type':'intvar','params':[m.group(1),m.group(2)]}); continue
+        m = re.match(r'String\s+(\w+)\s*=\s*"([^"]*)"\s*;', line)
+        if m: blocks.append({'type':'stringvar','params':[m.group(1),m.group(2)]}); continue
         m = re.match(r'pinMode\s*\(\s*(\w+)\s*,\s*(\w+)\s*\)\s*;', line)
         if m: blocks.append({'type':'pinmode','params':[m.group(1),m.group(2)]}); continue
         m = re.match(r'digitalWrite\s*\(\s*(\w+)\s*,\s*(\w+)\s*\)\s*;', line)
         if m: blocks.append({'type':'digitalwrite','params':[m.group(1),m.group(2)]}); continue
+        m = re.match(r'analogWrite\s*\(\s*(\w+)\s*,\s*(\w+)\s*\)\s*;', line)
+        if m: blocks.append({'type':'analogwrite','params':[m.group(1),m.group(2)]}); continue
+        m = re.match(r'tone\s*\(\s*(\w+)\s*,\s*(\w+)\s*,\s*(\w+)\s*\)\s*;', line)
+        if m: blocks.append({'type':'tone','params':[m.group(1),m.group(2),m.group(3)]}); continue
+        m = re.match(r'tone\s*\(\s*(\w+)\s*,\s*(\w+)\s*\)\s*;', line)
+        if m: blocks.append({'type':'tone','params':[m.group(1),m.group(2),'']}); continue
         m = re.match(r'delay\s*\(\s*(\d+)\s*\)\s*;', line)
         if m: blocks.append({'type':'delay','params':[m.group(1)]}); continue
         m = re.match(r'Serial\.begin\s*\(\s*(\d+)\s*\)\s*;', line)
         if m: blocks.append({'type':'serialbegin','params':[m.group(1)]}); continue
         m = re.match(r'Serial\.print(?:ln)?\s*\(\s*"([^"]*)"\s*\)\s*;', line)
         if m: blocks.append({'type':'serialprint','params':[m.group(1)]}); continue
+        m = re.match(r'(\w+)\s*=\s*analogRead\s*\(\s*(\w+)\s*\)\s*;', line)
+        if m: blocks.append({'type': 'analogread', 'params': [m.group(2), m.group(1)]}); continue
     return blocks
 
 
@@ -437,12 +447,16 @@ def arduino_block_coder(height=550, preset=None, drawer_content=None, pin_refs=N
         "<div id='palette'>"
         "<div class='pal-title'>Blocks</div>"
         "<button class='block-btn' data-type='intvar'>int var</button>"
+        "<button class='block-btn' data-type='stringvar'>String var</button>"
         "<button class='block-btn' data-type='pinmode'>pinMode</button>"
         "<button class='block-btn' data-type='digitalwrite'>digitalWrite</button>"
+        "<button class='block-btn' data-type='analogwrite'>analogWrite</button>"
+        "<button class='block-btn' data-type='tone'>tone</button>"
         "<button class='block-btn' data-type='delay'>delay</button>"
         "<button class='block-btn' data-type='serialbegin'>Serial.begin</button>"
         "<button class='block-btn' data-type='serialprint'>Serial.print</button>"
         "<button class='block-btn' data-type='ifblock'>if statement</button>"
+        "<button class='block-btn' data-type='analogread'>analogRead</button>"
         "</div>"
         "<div id='workspace'>"
         "<div class='section s-global' id='gs'>"
@@ -490,22 +504,51 @@ def arduino_block_coder(height=550, preset=None, drawer_content=None, pin_refs=N
         "  btn.classList.add('active');"
         "  document.getElementById(panelId).classList.add('active');}"
         "document.addEventListener('DOMContentLoaded',function(){"
+        "var UNO_DIGITAL_PINS=['0','1','2','3','4','5','6','7','8','9','10','11','12','13'];"
+        "var UNO_ANALOG_PINS=['A0','A1','A2','A3','A4','A5'];"
+        "var UNO_DIGITAL_IO_PINS=UNO_DIGITAL_PINS.concat(UNO_ANALOG_PINS);"
+        "var UNO_PWM_PINS=['3','5','6','9','10','11'];"
         "var B={"
         "intvar:{allowed:['global'],inputs:[{t:'text',l:'Name'},{t:'number',l:'Value'}],"
         "  gen:function(p){return 'int '+(p[0]||'myVar')+' = '+(p[1]||0)+';';}},"
-        "pinmode:{allowed:['setup'],inputs:[{t:'text',l:'Pin'},{t:'sel',l:'Mode',o:['OUTPUT','INPUT_PULLUP']}],"
+        "stringvar:{allowed:['global'],inputs:[{t:'text',l:'Name'},{t:'text',l:'Value'}],"
+        "  gen:function(p){var v=String(p[1]||'').replace(/\\\\/g,'\\\\\\\\').replace(/\"/g,'\\\\\"');"
+        "    return 'String '+(p[0]||'myText')+' = \"'+v+'\";';}},"
+        "pinmode:{allowed:['setup'],inputs:[{t:'sel',l:'Pin',o:'DIGITAL_PIN_OPTIONS'},{t:'sel',l:'Mode',o:['OUTPUT','INPUT_PULLUP']}],"
         "  gen:function(p){return 'pinMode('+(p[0])+', '+(p[1])+');';}},"
-        "digitalwrite:{allowed:['loop','if'],inputs:[{t:'text',l:'Pin'},{t:'sel',l:'Value',o:['HIGH','LOW']}],"
+        "digitalwrite:{allowed:['loop','if'],inputs:[{t:'sel',l:'Pin',o:'DIGITAL_PIN_OPTIONS'},{t:'sel',l:'Value',o:['HIGH','LOW']}],"
         "  gen:function(p){return 'digitalWrite('+(p[0])+', '+(p[1])+');';}},"
+        "analogwrite:{allowed:['loop','if'],inputs:[{t:'sel',l:'Pin',o:'PWM_PIN_OPTIONS'},{t:'number',l:'Value (0-255)'}],"
+        "  gen:function(p){return 'analogWrite('+(p[0]||9)+', '+(p[1]||128)+');';}},"
+        "tone:{allowed:['loop','if'],inputs:[{t:'sel',l:'Pin',o:'DIGITAL_PIN_OPTIONS'},{t:'number',l:'Freq (Hz)'},{t:'number',l:'Duration (ms)'}],"
+        "  gen:function(p){var pin=(p[0]||5),f=(p[1]||440),d=p[2];"
+        "    return (d!==''&&d!==null&&d!==undefined)?('tone('+pin+', '+f+', '+d+');'):('tone('+pin+', '+f+');');}},"
         "delay:{allowed:['loop','if'],inputs:[{t:'number',l:'ms'}],"
         "  gen:function(p){return 'delay('+(p[0]||1000)+');';}},"
         "serialbegin:{allowed:['setup'],inputs:[{t:'sel',l:'Baud',o:['9600','19200','38400','57600','115200']}],"
         "  gen:function(p){return 'Serial.begin('+(p[0]||'9600')+');';}},"
         "serialprint:{allowed:['setup','loop','if'],inputs:[{t:'text',l:'Message'}],"
         "  gen:function(p){return 'Serial.print(\"'+(p[0]||'Hello')+'\");';}},"
+        "analogread: {allowed: ['loop','if'],inputs: [{ t:'sel', l:'Pin', o:'ANALOG_PIN_OPTIONS' },{ t:'text', l:'Into var' }],"
+        "  gen: function(p) {return (p[1]||'val') + ' = analogRead(' + (p[0]||'A0') + ');';}},"
         "ifblock:{allowed:['loop','if'],inputs:[],gen:function(){return '';}},"
         "};"
         "var SECTIONS={global:[],setup:[],loop:[]};"
+        "function getOptions(key){"
+        "  var base;"
+        "  if(key==='DIGITAL_PIN_OPTIONS'){base=UNO_DIGITAL_IO_PINS;}"
+        "  else if(key==='PWM_PIN_OPTIONS'){base=UNO_PWM_PINS;}"
+        "  else if(key==='ANALOG_PIN_OPTIONS'){base=UNO_ANALOG_PINS;}"
+        "  else{return [];}"
+        "  var opts=base.slice();"
+        "  SECTIONS.global.forEach(function(b){"
+        "    if(b.type==='intvar'){"
+        "      var n=b.params[0];"
+        "      if(n&&opts.indexOf(n)===-1)opts.push(n);"
+        "    }"
+        "  });"
+        "  return opts;"
+        "}"
         "var sel=null;"
         + initial_js +
         "function setSelection(section,targetArr,pathStr){"
@@ -593,7 +636,8 @@ def arduino_block_coder(height=550, preset=None, drawer_content=None, pin_refs=N
         "    var lb=document.createElement('label');lb.textContent=inp.l;f.appendChild(lb);"
         "    var el;"
         "    if(inp.t==='sel'){el=document.createElement('select');"
-        "      inp.o.forEach(function(opt){var o=document.createElement('option');"
+        "      var opts=inp.o; if(typeof opts==='string'){opts=getOptions(opts);}"
+        "      opts.forEach(function(opt){var o=document.createElement('option');"
         "        if(typeof opt==='object'){o.value=opt.v;o.textContent=opt.lb;}else{o.value=opt;o.textContent=opt;}"
         "        el.appendChild(o);});el.value=block.params[j];"
         "    }else{el=document.createElement('input');el.type=inp.t==='number'?'number':'text';el.value=block.params[j];}"
@@ -668,6 +712,26 @@ def arduino_block_coder(height=550, preset=None, drawer_content=None, pin_refs=N
         "function kw(text){var s=document.createElement('span');s.className='if-keyword';s.textContent=text;return s;}"
         "function mkact(text,fn){var b=document.createElement('button');b.className='act';b.textContent=text;"
         "  b.addEventListener('click',function(e){e.stopPropagation();fn();});return b;}"
+        "function getConditionSuggestions(){"
+        "  var seen={},out=[];"
+        "  function add(v){if(!v)return;if(seen[v])return;seen[v]=true;out.push(v);}"
+        "  ['global','setup','loop'].forEach(function(sec){"
+        "    SECTIONS[sec].forEach(function(b){"
+        "      if(b.type==='pinmode'){"
+        "        var pin=b.params[0],mode=b.params[1];"
+        "        if(mode==='INPUT'||mode==='INPUT_PULLUP')add('digitalRead('+pin+')');"
+        "      }else if(b.type==='analogread'){"
+        "        var ap=b.params[0],vn=b.params[1]||'val';"
+        "        add('analogRead('+ap+')');"
+        "        add(vn);"
+        "      }else if(b.type==='intvar'||b.type==='stringvar'){"
+        "        add(b.params[0]);"
+        "      }"
+        "    });"
+        "  });"
+        "  ['HIGH','LOW'].forEach(add);"
+        "  return out;"
+        "}"
         "function appendCondFields(parent,cond){"
         "  parent.appendChild(condField('left',cond,'text'));"
         "  parent.appendChild(condField('op',cond,'opsel'));"
@@ -693,7 +757,23 @@ def arduino_block_coder(height=550, preset=None, drawer_content=None, pin_refs=N
         "    [['none','\\u2014'],['and','and'],['or','or']].forEach(function(o){"
         "      var opt=document.createElement('option');opt.value=o[0];opt.textContent=o[1];el.appendChild(opt);});"
         "    el.value=obj[labelText];"
-        "  }else{el=document.createElement('input');el.type='text';el.className='cond-input';el.value=obj[labelText]||'';}"
+        "  }else{el=document.createElement('input');el.type='text';el.className='cond-input';el.value=obj[labelText]||'';"
+        "    function closeSugg(){var old=f.querySelector('select.cond-sel');if(old)old.remove();}"
+        "    el.addEventListener('focus',function(e){"
+        "      e.stopPropagation();"
+        "      closeSugg();"
+        "      var list=document.createElement('select');list.className='blk-input cond-sel';"
+        "      var first=document.createElement('option');first.value='';first.textContent='suggest…';list.appendChild(first);"
+        "      getConditionSuggestions().forEach(function(v){var o=document.createElement('option');o.value=v;o.textContent=v;list.appendChild(o);});"
+        "      list.addEventListener('click',function(ev){ev.stopPropagation();});"
+        "      list.addEventListener('change',function(ev){if(!ev.target.value)return;el.value=ev.target.value;obj[labelText]=el.value;genCode();closeSugg();});"
+        "      list.addEventListener('blur',function(){closeSugg();});"
+        "      f.appendChild(list);"
+        "    });"
+        "    el.addEventListener('blur',function(){setTimeout(function(){if(document.activeElement&&document.activeElement.classList&&document.activeElement.classList.contains('cond-sel'))return;closeSugg();},0);});"
+        "    el.addEventListener('keydown',function(ev){if(ev.key==='Escape'){closeSugg();}});"
+        "    el.addEventListener('input',function(){closeSugg();});"
+        "  }"
         "  el.addEventListener('click',function(e){e.stopPropagation();});"
         "  el.addEventListener('input',function(e){e.stopPropagation();obj[labelText]=e.target.value;genCode();});"
         "  el.addEventListener('change',function(e){e.stopPropagation();obj[labelText]=e.target.value;genCode();});"

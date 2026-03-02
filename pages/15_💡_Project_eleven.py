@@ -6,15 +6,15 @@ from components.arduino_blocks import arduino_block_coder
 from components.contents import DRAWER_CONTENT
 from PIL import Image
 from utils.utils import hover_zoom_at_cursor, complete_step_and_continue, get_automated_pages
-
+st.set_page_config(layout= "wide")
 # --- ASSETS ---
+banner = Image.open("graphics/jet_engine_start.png")
 engine_start = Image.open("graphics/project_twelve_circuit.png")
+st.image(banner)
 
 
 st.markdown("""
 <div style="max-width: 850px; margin: auto;">
-
-# ✈️ Project – Engine Start Sequence
 
 ## 🛫 Welcome to the Flight Simulator
 
@@ -259,19 +259,6 @@ Your job is not to build yet — your job is to **notice and understand**.
 
 When you know where everything connects, you know exactly what your code must control. 🚀
 """)
-import streamlit as st
-from utils.utils import hover_zoom_html
-
-html = hover_zoom_html("graphics/project_twelve_circuit.png", height=500, key="test")
-
-# Verify the base64 string is actually in the output
-st.write("HTML length:", len(html))
-st.write("Has image data:", "data:image/png;base64" in html)
-
-# Render it directly
-st.components.v1.html(html, height=520)
-st.set_page_config(layout= "wide")
-st.title("Build Your Sketch")
 
 arduino_block_coder(
     preset = 'engine_start',
