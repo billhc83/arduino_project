@@ -1,5 +1,6 @@
 import streamlit as st
-
+from datetime import datetime
+from sqlalchemy import text
 #Next challenge button
 def admin_get_next_step(current_step_title, pages_map):
     """
@@ -81,45 +82,85 @@ with tab2:
         "SELECT id, username, category, message, created_at FROM feedback ORDER BY created_at DESC", 
         ttl=0
     )
-    print(feedback_df)
+    
     if not feedback_df.empty:
         # Add a 'Select' column for the user to check off rows
         feedback_df.insert(0, "Select", False)
         
-        # 2. Use data_editor to allow selection
         edited_df = st.data_editor(
             feedback_df,
             hide_index=True,
-            width= "stretch",
+            use_container_width=True,
             column_config={
-                "id": None, # Hide the ID from the user
+                "id": None,
                 "Select": st.column_config.CheckboxColumn("Delete?", default=False),
                 "created_at": st.column_config.DatetimeColumn("Date", format="D MMM, h:mm a"),
             },
-            disabled=["username", "category", "message", "created_at"] # Only 'Select' is editable
+            disabled=["username", "category", "message", "created_at"]
         )
         
-        # 3. Filter for rows where 'Select' is True
         to_delete = edited_df[edited_df["Select"] == True]
-        
         if not to_delete.empty:
             if st.button(f"Delete {len(to_delete)} Selected Entries", type="primary"):
-                from sqlalchemy import text
                 ids_to_del = to_delete["id"].tolist()
-                
                 with conn.session as s:
-                    # Using WHERE id IN (...) to delete multiple at once
                     s.execute(
                         text("DELETE FROM feedback WHERE id IN :ids"),
                         {"ids": tuple(ids_to_del)}
                     )
                     s.commit()
-                st.success(f"Successfully deleted {len(to_delete)} entries.")
+                st.success(f"Deleted {len(to_delete)} entries.")
                 st.rerun()
+
+        # --- Threaded replies section ---
+        st.divider()
+        st.markdown("### 💬 Reply to Feedback")
+
+        for _, thread in feedback_df.iterrows():
+            with st.expander(f"[{thread['category']}] {thread['username']} — {thread['message'][:60]}..."):
+                
+                replies = conn.query(
+                    f"SELECT * FROM feedback_replies WHERE feedback_id = {thread['id']} ORDER BY created_at",
+                    ttl=0
+                )
+                if replies.empty:
+                    st.caption("No replies yet.")
+                else:
+                    for _, r in replies.iterrows():
+                        if r['sender'] == 'admin':
+                            st.info(f"**Admin:** {r['message']}")
+                        else:
+                            st.write(f"**{thread['username']}:** {r['message']}")
+
+                with st.form(key=f"admin_form_{thread['id']}"):
+                    admin_reply = st.text_input("Reply to user")
+                    col1, col2 = st.columns(2)
+                    
+                    if col1.form_submit_button("Send Reply"):
+                        if admin_reply.strip():
+                            with conn.session as s:
+                                s.execute(text("""
+                                    INSERT INTO feedback_replies (feedback_id, sender, message, created_at)
+                                    VALUES (:feedback_id, :sender, :message, :created_at)
+                                """), {
+                                    "feedback_id": thread['id'],
+                                    "sender": "admin",
+                                    "message": admin_reply,
+                                    "created_at": datetime.now()
+                                })
+                                s.commit()
+                            st.rerun()
+                    
+                    if col2.form_submit_button("✅ Resolve & Delete"):
+                        with conn.session as s:
+                            s.execute(
+                                text("DELETE FROM feedback WHERE id = :id"),
+                                {"id": thread['id']}
+                            )
+                            s.commit()
+                        st.rerun()
     else:
         st.info("No feedback submitted yet.")
-
-
 with tab3:
     st.subheader("User Activity Logs")
     # Fetch logs and calculate total time per user
@@ -133,7 +174,7 @@ with tab3:
         st.bar_chart(summary.set_index("username")["stay_duration_minutes"])
         
         st.write("### Raw Logs")
-        st.dataframe(logs_df, use_container_width=True)
+        st.dataframe(logs_df, width='stretch')
     else:
         st.info("No activity recorded yet.")
 

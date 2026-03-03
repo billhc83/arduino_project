@@ -27,6 +27,35 @@ if user != "Guest":
     st.subheader(f"{total_time} Hours Of Learning Completed")
 
 st.divider()
+from sqlalchemy import text
+from datetime import datetime
+threads = conn.query(
+    f"SELECT * FROM feedback WHERE username= '{user}'",
+    ttl=0
+)
+
+
+for _, thread in threads.iterrows():  # conn.query returns a dataframe
+    with st.expander(f"🗨️ {thread['message'][:60]}..."):
+        replies = conn.query(
+        f"SELECT * FROM feedback_replies WHERE feedback_id = {thread['id']} ORDER BY created_at",
+        ttl=0
+        )
+        for _, r in replies.iterrows():
+            if r['sender'] == 'admin':
+                st.info(f"**Support:** {r['message']}")
+            else:
+                st.write(f"**You:** {r['message']}")
+
+        with st.form(key=f"reply_{thread['id']}"):
+            user_reply = st.text_input("Add a message")
+            if st.form_submit_button("Send"):
+                with conn.session as s:
+                    s.execute(text(
+                        "INSERT INTO feedback_replies (feedback_id, sender, message, created_at) VALUES (:feedback_id, :sender, :message, :created_at)"
+                    ), {"feedback_id": thread['id'], "sender": "user", "message": user_reply, "created_at": datetime.now()})
+                    s.commit()
+                st.rerun()
 
 #Display challenges feedback
 
@@ -157,14 +186,6 @@ for i in range(0, len(project_items), projects_per_row):
 
 from utils.badges import badges  # <- import the import streamlit as st
 
-# ... your dictionary and session state setup ...
-import streamlit as st
-
-# ... your badge dictionary ...
-
-import streamlit as st
-
-# Define the order of tiers you want to display
 import streamlit as st
 
 # Define fun, child-friendly names for your tiers
@@ -251,3 +272,5 @@ with st.expander("Change Password"):
                 else:
                     st.error("❌ Something went wrong with the database update.")
     pass
+
+

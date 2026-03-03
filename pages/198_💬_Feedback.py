@@ -8,7 +8,7 @@ st.write("Have a suggestion or found a bug? Let us know!")
 with st.form("feedback_form", clear_on_submit=True):
     category = st.selectbox("Category", ["Bug Report", "Feature Suggestion", "General Comment"])
     message = st.text_area("Your Feedback")
-    from datetime import datetime
+    from datetime import datetime, timezone
     
     if st.form_submit_button("Submit"):
         if message.strip():
@@ -23,7 +23,7 @@ with st.form("feedback_form", clear_on_submit=True):
                             "u": st.session_state.user_id,
                             "c": category,
                             "m": message,
-                            "t": datetime.utcnow()
+                            "t": datetime.now(timezone.utc)
                         }
                     )
                     s.commit()
