@@ -164,7 +164,8 @@ with tab2:
 with tab3:
     st.subheader("User Activity Logs")
     # Fetch logs and calculate total time per user
-    logs_df = conn.query("SELECT username, page_name, stay_duration_seconds, timestamp FROM activity_logs ORDER BY timestamp DESC", ttl=0)
+    logs_df = conn.query(
+    "SELECT * FROM activity_logs WHERE username != 'admin' ORDER BY timestamp DESC",ttl=0)
     
     if not logs_df.empty:
         # Show a summary: Total time spent by each user
@@ -181,7 +182,7 @@ with tab3:
     st.subheader("📊 Content Engagement Analysis")
 
 # Fetch logs from Postgres
-    logs_df = conn.query("SELECT page_name, stay_duration_seconds FROM activity_logs", ttl=0)
+    logs_df = conn.query("SELECT page_name, stay_duration_seconds FROM activity_logs WHERE username != 'admin'", ttl=0)
 
     if not logs_df.empty:
         # 1. Calculate Average & Total time per page

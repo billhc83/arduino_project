@@ -23,35 +23,51 @@ def update_password_secure(username, new_password):
 
 
 
-def hash_password(password):
-    return hashlib.sha256(str.encode(password)).hexdigest()
+#def hash_password(password):
+#    return hashlib.sha256(str.encode(password)).hexdigest()
     # Initialize connection
 
 conn = st.connection("postgresql", type="sql")
 
 def verify_login(username, password):
+    from utils.auth_utils import verify_password, hash_password, is_sha256
     """Checks if the user exists and the password is correct."""
-    hashed = hash_password(password)
     
-    # We JOIN the public info (admin/approved) with the private password
-    query = """
-        SELECT u.is_admin, u.is_approved 
+    # fetch stored hash first — we need it in Python for bcrypt comparison
+    result = conn.query(
+        """
+        SELECT u.is_admin, u.is_approved, c.password
         FROM public.users u
         JOIN private.user_creds c ON LOWER(u.username) = LOWER(c.username)
-        WHERE LOWER(u.username) = LOWER(:u) AND c.password = :p
-    """
-    
-    # Use the [Streamlit SQL Connection](https://docs.streamlit.io)
-    result = conn.query(
-        query,
-        params={"u": username, "p": hashed},
-        ttl=0 
+        WHERE LOWER(u.username) = LOWER(:u)
+        """,
+        params={"u": username},
+        ttl=0
     )
-    
-    if not result.empty:
-        # This returns the is_admin and is_approved columns as a dictionary
-        return result.iloc[0].to_dict()
-    return None
+
+    if result.empty:
+        return None
+
+    stored_hash = result.iloc[0]["password"]
+
+    if not verify_password(password, stored_hash):
+        return None
+
+    # lazy migration — upgrade SHA256 to bcrypt on successful login
+    if is_sha256(stored_hash):
+        new_hash = hash_password(password)
+        with conn.session as s:
+            s.execute(
+                text("""
+                UPDATE private.user_creds 
+                SET password = :new_hash 
+                WHERE LOWER(username) = LOWER(:username)
+            """),
+                {"new_hash": new_hash, "username": username}
+            )
+            s.commit()
+
+    return result.iloc[0][["is_admin", "is_approved"]].to_dict()
 
 def get_user_progress(username):
     """Fetches all steps completed by this user."""
