@@ -23,7 +23,7 @@ When it is time to launch, YOU press the big launch button 🔘
 The computer wakes up and starts the launch sequence.
 
 Suddenly…
-🚨 BEEP! BEEP! BEEP! 🚨
+🚨 BEEEEEEEEEEEEp!🚨
 
 The launch alarm sounds to warn everyone that the rocket is about to lift off!
 
@@ -36,7 +36,7 @@ Make a sound when something important happens
 Follow your commands, just like a real spacecraft
 
 Get ready…
-3… 2… 1… LAUNCH! 🚀✨
+LAUNCH! 🚀✨
 """)
 
 st.markdown("""

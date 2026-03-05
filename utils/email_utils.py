@@ -46,3 +46,57 @@ def send_verification_email(username: str, email: str):
             <p>If you did not sign up, you can ignore this email.</p>
         """
     })
+
+
+def send_temp_password(email: str) -> bool:
+    import secrets
+    import string
+    """Generate a temp password, update db, send via email. Returns True if email found."""
+    conn = st.connection("postgresql", type="sql")
+
+    # find user by email
+    result = conn.query(
+        "SELECT username FROM public.users WHERE LOWER(email) = LOWER(:e)",
+        params={"e": email},
+        ttl=0
+    )
+
+    if result.empty:
+        return False
+
+    username = result.iloc[0]["username"]
+
+    # generate a readable temp password
+    alphabet = string.ascii_letters + string.digits
+    temp_password = ''.join(secrets.choice(alphabet) for _ in range(10))
+
+    # hash and update in db
+    from utils.auth_utils import hash_password
+    hashed = hash_password(temp_password)
+
+    with conn.session as s:
+        s.execute(
+            text("""
+                UPDATE private.user_creds 
+                SET password = :p 
+                WHERE LOWER(username) = LOWER(:u)
+            """),
+            {"p": hashed, "u": username}
+        )
+        s.commit()
+
+    # send email
+    resend.Emails.send({
+        "from": "noreply@kidscode.ca",
+        "to": email,
+        "subject": "Your temporary password",
+        "html": f"""
+            <p>Hi {username},</p>
+            <p>Your temporary password is:</p>
+            <h2>{temp_password}</h2>
+            <p>Please log in and change your password as soon as possible.</p>
+            <p>If you did not request this, please contact us immediately.</p>
+        """
+    })
+
+    return True

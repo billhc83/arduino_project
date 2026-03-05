@@ -33,47 +33,8 @@ if not st.session_state.get("is_admin"):
 st.title("⚙️ Admin Dashboard")
 
 # Tabbed interface to keep things organized
-tab1, tab2, tab3, tab4, tab5 = st.tabs(["User Approvals", "User Feedback", "Usage Stats", "User Table", "Challenge Submissions"])
+tab2, tab3, tab4, tab5 = st.tabs(["User Feedback", "Usage Stats", "User Table", "Challenge Submissions"])
 
-with tab1:
-    st.subheader("Pending Requests")
-    
-    # Fetch unapproved users
-    pending_users = conn.query("SELECT username FROM users WHERE is_approved = FALSE", ttl=0)
-
-    if not pending_users.empty:
-        for index, row in pending_users.iterrows():
-            user = row['username']
-            # Creating 3 columns: Name, Approve Button, Reject Button
-            col1, col2, col3 = st.columns([2, 1, 1])
-            
-            col1.write(f"👤 **{user}**")
-            
-            # --- APPROVE BUTTON ---
-            if col2.button("Approve", key=f"app_{user}"):
-                from sqlalchemy import text
-                with conn.session as s:
-                    s.execute(
-                        text("UPDATE users SET is_approved = TRUE WHERE username = :u"),
-                        {"u": user}
-                    )
-                    s.commit()
-                st.success(f"Approved {user}!")
-                st.rerun()
-
-            # --- REJECT/DELETE BUTTON ---
-            if col3.button("Reject", key=f"rej_{user}", type="secondary", help="Delete this request"):
-                from sqlalchemy import text
-                with conn.session as s:
-                    s.execute(
-                        text("DELETE FROM users WHERE username = :u AND is_approved = FALSE"),
-                        {"u": user}
-                    )
-                    s.commit()
-                st.warning(f"Request for {user} deleted.")
-                st.rerun()
-    else:
-        st.info("No pending requests.")
 with tab2:
     st.subheader("📬 Manage Feedback")
     
@@ -219,78 +180,92 @@ with tab3:
     else:
         st.info("Not enough data to generate engagement metrics yet.")
 
-
 with tab4:
     st.title("User Management")
-    st.subheader("👥 Edit App Users")
+    st.subheader("👥 Parent & User Accounts")
     
-    # 1. Fetch current user data
-    query = """
-    SELECT 
-        u.username, 
-        c.password, 
-        u.is_admin, 
-        u.is_approved 
-    FROM public.users u
-    JOIN private.user_creds c ON u.username = c.username
-"""
+    user_df = conn.query("""
+        SELECT 
+            u.username,
+            u.email,
+            u.is_admin,
+            u.is_approved,
+            u.is_parent,
+            u.email_verified,
+            u.max_children,
+            c.password
+        FROM public.users u
+        JOIN private.user_creds c ON u.username = c.username
+        ORDER BY u.username
+    """, ttl=0)
 
-
-    user_df = conn.query(query, ttl=0)
-
-    
-    # 2. Display editable table
     edited_data = st.data_editor(
         user_df,
         key="user_editor",
-        width="stretch",
-        num_rows="dynamic", # Allows adding/deleting rows manually
+        use_container_width=True,
+        num_rows="fixed",
         column_config={
-            "password": st.column_config.TextColumn("Hashed Password (Read-Only)", disabled=True),
-            "is_admin": st.column_config.CheckboxColumn("Admin Status"),
-            "is_approved": st.column_config.CheckboxColumn("Approved")
+            "password": st.column_config.TextColumn("Password Hash", disabled=True),
+            "email": st.column_config.TextColumn("Email"),
+            "is_admin": st.column_config.CheckboxColumn("Admin"),
+            "is_approved": st.column_config.CheckboxColumn("Approved"),
+            "is_parent": st.column_config.CheckboxColumn("Parent"),
+            "email_verified": st.column_config.CheckboxColumn("Email Verified"),
+            "max_children": st.column_config.NumberColumn("Max Children", min_value=0, max_value=20, step=1),
         }
     )
-    
-    # 1. Define your master username
-if st.button("Save User Changes"):
-    # 1. Count how many admins are in your EDITED data
-    # edited_data is what you see on the screen right now
-    current_admin_count = edited_data['is_admin'].sum()
-    MAX_ALLOWED = 1 
 
-    # 2. Check for the ceiling
-    if current_admin_count > MAX_ALLOWED:
-        st.error(f"🛑 Over Limit: You can only have {MAX_ALLOWED} admin. Please uncheck others before saving.")
-    
-    # 3. Check for the floor (Don't lock yourself out!)
-    elif current_admin_count < 1:
-        st.error("🛑 Safety Error: You must have at least 1 admin. Don't lock yourself out!")
-    
+    st.subheader("👧 Child Accounts")
+    child_df = conn.query("""
+        SELECT username, parent_username, display_name, created_at
+        FROM public.child_profiles
+        ORDER BY parent_username, username
+    """, ttl=0)
+
+    if not child_df.empty:
+        st.dataframe(child_df, use_container_width=True)
     else:
-        # 4. If count is exactly 1, proceed with the database update
-        try:
-            from sqlalchemy import text
-            with conn.session as s:
-                for index, row in edited_data.iterrows():
-                    s.execute(
-                        text("""
-                            UPDATE users 
-                            SET is_admin = :a, is_approved = :ap, username = :un 
-                            WHERE username = :old_un
-                        """),
-                        {
-                            "a": row['is_admin'], 
-                            "ap": row['is_approved'], 
-                            "un": row['username'], 
-                            "old_un": user_df.iloc[index]['username']
-                        }
-                    )
-                s.commit()
-            st.success("User table updated successfully!")
-            st.rerun()
-        except Exception as e:
-            st.error(f"Failed to update users: {e}")
+        st.info("No child accounts yet.")
+
+    if st.button("Save User Changes"):
+        current_admin_count = edited_data['is_admin'].sum()
+        MAX_ALLOWED = 1
+
+        if current_admin_count > MAX_ALLOWED:
+            st.error(f"🛑 You can only have {MAX_ALLOWED} admin.")
+        elif current_admin_count < 1:
+            st.error("🛑 You must have at least 1 admin.")
+        else:
+            try:
+                with conn.session as s:
+                    for index, row in edited_data.iterrows():
+                        s.execute(
+                            text("""
+                                UPDATE public.users 
+                                SET 
+                                    is_admin = :a, 
+                                    is_approved = :ap,
+                                    is_parent = :ip,
+                                    email_verified = :ev,
+                                    max_children = :mc,
+                                    username = :un
+                                WHERE username = :old_un
+                            """),
+                            {
+                                "a": row['is_admin'],
+                                "ap": row['is_approved'],
+                                "ip": row['is_parent'],
+                                "ev": row['email_verified'],
+                                "mc": row['max_children'],
+                                "un": row['username'],
+                                "old_un": user_df.iloc[index]['username']
+                            }
+                        )
+                    s.commit()
+                st.success("User table updated successfully!")
+                st.rerun()
+            except Exception as e:
+                st.error(f"Failed to update users: {e}")
 with tab5:
     from data_base import admin_process_challenge
 

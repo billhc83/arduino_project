@@ -14,9 +14,7 @@ with st.form("Login Form", border=True):
         clean_pass = pass_input.strip()
         user_data = verify_login(clean_user, clean_pass)
         if user_data:
-            if not user_data.get("is_approved", False):
-                st.error("🚨 Your account is pending approval.")
-            elif user_data.get("is_parent") and not user_data.get("email_verified", False):
+            if not user_data.get("email_verified", False):
                 st.error("📧 Please verify your email before logging in. Check your inbox.")
             else:
                 st.session_state.is_admin = user_data.get("is_admin", False)
@@ -24,8 +22,24 @@ with st.form("Login Form", border=True):
                 st.session_state.user_id = clean_user
                 st.toast("Welcome back!")
                 st.rerun()
+    else:
+        st.error("Invalid username or password")
+from utils.email_utils import send_temp_password
+with st.expander("🔑 Forgot your password?"):
+    st.caption(
+        "If your account was created by a parent, "
+        "ask them to reset your password from their Parent Dashboard."
+    )
+    forgot_email = st.text_input("Enter your email address", key="forgot_email")
+    if st.button("Send Temporary Password"):
+        if not forgot_email or "@" not in forgot_email:
+            st.error("Please enter a valid email address.")
         else:
-            st.error("Invalid username or password")
+            found = send_temp_password(forgot_email)
+            if found:
+                st.success("✅ A temporary password has been sent to your email.")
+            else:
+                st.error("No account found with that email address.")
 
 st.divider()
 

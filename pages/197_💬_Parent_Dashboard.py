@@ -167,41 +167,42 @@ else:
 # ------------------------------------------------
 # Section 3 — Change Password
 # ------------------------------------------------
-st.subheader("🔒 Change Your Password")
-with st.form("change_password_form"):
-    current_pass = st.text_input("Current Password", type="password")
-    new_parent_pass = st.text_input("New Password", type="password")
-    confirm_parent_pass = st.text_input("Confirm New Password", type="password")
-    change = st.form_submit_button("Update Password")
+st.expander(
+    st.subheader("🔒 Change Your Password")
+    with st.form("change_password_form"):
+        current_pass = st.text_input("Current Password", type="password")
+        new_parent_pass = st.text_input("New Password", type="password")
+        confirm_parent_pass = st.text_input("Confirm New Password", type="password")
+        change = st.form_submit_button("Update Password")
 
-if change:
-    if not current_pass or not new_parent_pass:
-        st.error("All fields are required.")
-    elif new_parent_pass != confirm_parent_pass:
-        st.error("Passwords do not match.")
-    else:
-        creds = conn.query(
-            "SELECT password FROM private.user_creds WHERE LOWER(username) = LOWER(:u)",
-            params={"u": parent_username},
-            ttl=0
-        )
-        from utils.auth_utils import verify_password
-        if creds.empty or not verify_password(current_pass, creds.iloc[0]["password"]):
-            st.error("Current password is incorrect.")
+    if change:
+        if not current_pass or not new_parent_pass:
+            st.error("All fields are required.")
+        elif new_parent_pass != confirm_parent_pass:
+            st.error("Passwords do not match.")
         else:
-            hashed = hash_password(new_parent_pass)
-            with conn.session as s:
-                s.execute(
-                    text("""
-                        UPDATE private.user_creds 
-                        SET password = :p 
-                        WHERE LOWER(username) = LOWER(:u)
-                    """),
-                    {"p": hashed, "u": parent_username}
-                )
-                s.commit()
-            st.success("✅ Password updated successfully.")
-
+            creds = conn.query(
+                "SELECT password FROM private.user_creds WHERE LOWER(username) = LOWER(:u)",
+                params={"u": parent_username},
+                ttl=0
+            )
+            from utils.auth_utils import verify_password
+            if creds.empty or not verify_password(current_pass, creds.iloc[0]["password"]):
+                st.error("Current password is incorrect.")
+            else:
+                hashed = hash_password(new_parent_pass)
+                with conn.session as s:
+                    s.execute(
+                        text("""
+                            UPDATE private.user_creds 
+                            SET password = :p 
+                            WHERE LOWER(username) = LOWER(:u)
+                        """),
+                        {"p": hashed, "u": parent_username}
+                    )
+                    s.commit()
+                st.success("✅ Password updated successfully.")
+)
 # ------------------------------------------------
 # Section 4 — Account Info
 # ------------------------------------------------
