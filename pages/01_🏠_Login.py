@@ -9,7 +9,7 @@ with st.form("Login Form", border=True):
     pass_input = st.text_input("Password", type="password")
     login_clicked = st.form_submit_button("Login", use_container_width=True, type="primary")
 
-    if login_clicked:
+    if login_clicked and user_input.strip() and pass_input.strip():
         clean_user = user_input.strip()
         clean_pass = pass_input.strip()
         user_data = verify_login(clean_user, clean_pass)
