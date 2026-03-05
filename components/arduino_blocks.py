@@ -215,7 +215,7 @@ PIN_REFS = {
 
 # ── Component ─────────────────────────────────────────────────────────
 
-def arduino_block_coder(height=550, preset=None, drawer_content=None, pin_refs=None):
+def arduino_block_coder(height=550, preset=None, drawer_content=None, pin_refs=None, username=None):
 
     # Guard: if a string is passed positionally treat it as preset
     if isinstance(height, str):
@@ -274,12 +274,12 @@ def arduino_block_coder(height=550, preset=None, drawer_content=None, pin_refs=N
         "  font-family:inherit; text-align:left; }"
         ".block-btn:hover { border-color:#0969da; color:#0969da; background:#ddf4ff; }"
         "#workspace { flex:1; display:flex; flex-direction:column; gap:4px;"
-        "  padding:6px 6px 10px 6px; overflow:hidden; min-width:0; }"
+        "  padding:6px 6px 10px 6px; overflow:hidden; min-width:0; justify-content:flex-start; }"
         ".section { flex:0 0 36px; border:2px solid #dbeafe; border-radius:14px;"
         "  box-shadow:0 4px 12px rgba(0,0,0,0.06); background:#ffffff;"
         "  display:flex; flex-direction:column; overflow:hidden;"
         "  transition:flex 0.3s ease, box-shadow 0.2s ease; min-height:0; }"
-        ".section.expanded { flex:1 1 0; box-shadow:0 8px 24px rgba(0,0,0,0.1); }"
+        ".section.expanded { flex:1 1 0; box-shadow:0 8px 24px rgba(0,0,0,0.1); min-height:0; max-height:calc(100% - 100px); }"
         ".section::-webkit-scrollbar { width:3px; }"
         ".section::-webkit-scrollbar-thumb { background:#d0d7de; }"
         ".s-global.active { border-color:#0969da; }"
@@ -330,8 +330,8 @@ def arduino_block_coder(height=550, preset=None, drawer_content=None, pin_refs=N
         "  background:#ffffff; border-bottom:1px solid #d0d7de; }"
         "#statusbar span { color:#0969da; }"
         "#codepanel { width:250px; flex-shrink:0; border-left:1px solid #d0d7de;"
-        "  display:flex; flex-direction:column; padding:6px; gap:5px; }"
-        "#code-btns { display:flex; gap:5px; flex-shrink:0; }"
+        "  display:flex; flex-direction:column; padding:6px, 30px, 6px, 6px; gap:5px; }"
+        "#code-btns { display:flex; gap:5px; flex-shrink:0; padding-right: 28px; padding-top:10px; padding-left: 5px;}"
         "#msg { font-size:9px; color:#cf222e; opacity:0; transition:opacity 0.3s; flex-shrink:0; min-height:14px; }"
         "#msg.show { opacity:1; }"
         "#codeout { flex:1; background:#f6f8fa; border:1px solid #d0d7de; border-radius:6px;"
@@ -342,7 +342,7 @@ def arduino_block_coder(height=550, preset=None, drawer_content=None, pin_refs=N
         ".cbtn { flex:1; padding:4px; border-radius:5px; border:1px solid #d0d7de;"
         "  background:#f6f8fa; color:#24292f; cursor:pointer; font-family:inherit; font-size:9px; }"
         ".cbtn:hover { background:#e6ebf1; }"
-        "#app { display:flex; flex-direction:row; width:calc(100% - 22px); height:" + str(height) + "px; position:relative; }"
+        "#app { display:flex; flex-direction:row; width:100%; height:" + str(height) + "px; position:relative; }"
         "#drawer-tab { position:absolute; right:0; top:0; height:" + str(height) + "px; width:24px;"
         "  background:#e53935; border-left:1px solid #d0d7de;"
         "  display:flex; align-items:center; justify-content:center;"
@@ -443,6 +443,7 @@ def arduino_block_coder(height=550, preset=None, drawer_content=None, pin_refs=N
 
     body = (
         "<div id='statusbar'>click a section or if body to select it</div>"
+        "<div style='padding-bottom:400px;'>"
         "<div id='app'>"
         "<div id='palette'>"
         "<div class='pal-title'>Blocks</div>"
@@ -476,11 +477,14 @@ def arduino_block_coder(height=550, preset=None, drawer_content=None, pin_refs=N
         "<div id='code-btns'>"
         "<button class='cbtn' id='copybtn'>&#128203; Copy</button>"
         "<button class='cbtn' id='clrbtn'>&#128465; Clear</button>"
+        "<button class='cbtn' id='savebtn'>💾 Save</button>"
+        "<button class='cbtn' id='resetbtn'>↩️ Reset</button>"
         "</div>"
         "<div id='msg'></div>"
         "<div id='codeout'>// sketch&#10;// appears&#10;// here</div>"
         "</div>"
         + drawer_html +
+        "</div>"
         "</div>"
     )
 
@@ -496,7 +500,11 @@ def arduino_block_coder(height=550, preset=None, drawer_content=None, pin_refs=N
     pin_refs_js = "var PIN_REFS=" + items_js + ";"
 
     js = (
-        pin_refs_js +
+        "var USERNAME=" + (("'" + username + "'") if username else "null") + ";"
+        "var SUPABASE_URL='https://iawewzijjedahjrppgrv.supabase.co';"
+        "var SUPABASE_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imlhd2V3emlqamVkYWhqcnBwZ3J2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njk2NzU5MTgsImV4cCI6MjA4NTI1MTkxOH0.qs6kWZRiA-L3zv4Gn-GMyKACL81miw1gbEItnf3Z3rk';"
+        "var SAVE_DEBOUNCE=null;"
+        + pin_refs_js +
         "function switchTab(btn,panelId){"
         "  var inner=document.getElementById('drawer-inner');"
         "  inner.querySelectorAll('.drawer-tab-btn').forEach(function(b){b.classList.remove('active');});"
@@ -828,6 +836,38 @@ def arduino_block_coder(height=550, preset=None, drawer_content=None, pin_refs=N
         "  e.stopPropagation();"
         "  drawerOpen=!drawerOpen;"
         "  document.getElementById('drawer-panel').classList.toggle('open',drawerOpen);});"
+        "function saveBlocks(){"
+        "  if(!USERNAME)return;"
+        "  var state=JSON.stringify({global:SECTIONS.global,setup:SECTIONS.setup,loop:SECTIONS.loop});"
+        "  fetch(SUPABASE_URL+'/rest/v1/block_saves?on_conflict=username',"
+        "    {method:'POST',"
+        "     headers:{'apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY,"
+        "       'Content-Type':'application/json','Prefer':'resolution=merge-duplicates,return=minimal'},"
+        "     body:JSON.stringify({username:USERNAME,blocks_json:state,updated_at:new Date().toISOString()})"
+        "    }).then(function(r){if(r.ok)flash('Saved!');else flash('Save failed');});}"
+        "function loadBlocks(){"
+        "  if(!USERNAME)return;"
+        "  fetch(SUPABASE_URL+'/rest/v1/block_saves?username=eq.'+USERNAME,"
+        "    {headers:{'apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY}})"
+        "  .then(function(r){return r.json();})"
+        "  .then(function(data){"
+        "    if(data&&data.length>0){"
+        "      var saved=JSON.parse(data[0].blocks_json);"
+        "      SECTIONS.global=saved.global;"
+        "      SECTIONS.setup=saved.setup;"
+        "      SECTIONS.loop=saved.loop;"
+        "      clearSelection();"
+        "      render();"
+        "      genCode();"
+        "      flash('Loaded!');}})"
+        "  .catch(function(){flash('Load failed');});}"
+        "document.getElementById('savebtn').addEventListener('click',function(){saveBlocks();});"
+        "document.getElementById('resetbtn').addEventListener('click',function(){"
+        "  if(!confirm('Reset to original? Your saved progress will be lost.'))return;"
+        + initial_js +
+        "  clearSelection();render();genCode();"
+        "  flash('Reset!');});"
+        "if(USERNAME){loadBlocks();}"
         "render();"
         "});"
     )
@@ -842,4 +882,4 @@ def arduino_block_coder(height=550, preset=None, drawer_content=None, pin_refs=N
         "</body></html>"
     )
 
-    components.html(html, height=height+20, scrolling=True)
+    components.html(html, height=height, scrolling=True)

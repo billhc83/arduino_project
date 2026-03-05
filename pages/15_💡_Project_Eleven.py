@@ -261,7 +261,9 @@ When you know where everything connects, you know exactly what your code must co
 """)
 
 arduino_block_coder(
-    preset = 'engine_start',
-    pin_refs= "engine_start",
-    drawer_content= DRAWER_CONTENT.get("engine_start") 
+    preset='engine_start',
+    pin_refs="engine_start",
+    drawer_content=DRAWER_CONTENT.get("engine_start"),
+    username=st.session_state.get("user_id"),
+    height=620 
 )
