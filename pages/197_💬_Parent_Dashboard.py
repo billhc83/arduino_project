@@ -167,8 +167,10 @@ else:
 # ------------------------------------------------
 # Section 3 — Change Password
 # ------------------------------------------------
-st.expander(
-    st.subheader("🔒 Change Your Password")
+# ------------------------------------------------
+# Section 3 — Change Password
+# ------------------------------------------------
+with st.expander("🔒 Change Your Password"):
     with st.form("change_password_form"):
         current_pass = st.text_input("Current Password", type="password")
         new_parent_pass = st.text_input("New Password", type="password")
@@ -202,7 +204,7 @@ st.expander(
                     )
                     s.commit()
                 st.success("✅ Password updated successfully.")
-)
+
 # ------------------------------------------------
 # Section 4 — Account Info
 # ------------------------------------------------
