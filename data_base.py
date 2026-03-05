@@ -2,7 +2,7 @@ import streamlit as st
 import hashlib
 from sqlalchemy import create_engine, text
 import requests
-
+from utils.auth_utils import verify_password, hash_password, is_sha256
 from sqlalchemy import text
 
 def update_password_secure(username, new_password):
@@ -30,16 +30,27 @@ def update_password_secure(username, new_password):
 conn = st.connection("postgresql", type="sql")
 
 def verify_login(username, password):
-    from utils.auth_utils import verify_password, hash_password, is_sha256
     """Checks if the user exists and the password is correct."""
-    
-    # fetch stored hash first — we need it in Python for bcrypt comparison
+    #conn = st.connection("postgresql", type="sql")
+
     result = conn.query(
         """
-        SELECT u.is_admin, u.is_approved, c.password
+        SELECT u.is_admin, u.is_approved, u.is_parent, u.email_verified, c.password
         FROM public.users u
         JOIN private.user_creds c ON LOWER(u.username) = LOWER(c.username)
         WHERE LOWER(u.username) = LOWER(:u)
+        
+        UNION ALL
+        
+        SELECT 
+            FALSE as is_admin, 
+            TRUE as is_approved, 
+            FALSE as is_parent, 
+            TRUE as email_verified, 
+            c.password
+        FROM public.child_profiles cp
+        JOIN private.user_creds c ON LOWER(cp.username) = LOWER(c.username)
+        WHERE LOWER(cp.username) = LOWER(:u)
         """,
         params={"u": username},
         ttl=0
@@ -49,26 +60,23 @@ def verify_login(username, password):
         return None
 
     stored_hash = result.iloc[0]["password"]
-
     if not verify_password(password, stored_hash):
         return None
 
-    # lazy migration — upgrade SHA256 to bcrypt on successful login
     if is_sha256(stored_hash):
         new_hash = hash_password(password)
         with conn.session as s:
             s.execute(
                 text("""
-                UPDATE private.user_creds 
-                SET password = :new_hash 
-                WHERE LOWER(username) = LOWER(:username)
-            """),
+                    UPDATE private.user_creds 
+                    SET password = :new_hash 
+                    WHERE LOWER(username) = LOWER(:username)
+                """),
                 {"new_hash": new_hash, "username": username}
             )
             s.commit()
 
-    return result.iloc[0][["is_admin", "is_approved"]].to_dict()
-
+    return result.iloc[0][["is_admin", "is_approved", "is_parent", "email_verified"]].to_dict()
 def get_user_progress(username):
     """Fetches all steps completed by this user."""
     result = conn.query(

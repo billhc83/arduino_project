@@ -15,12 +15,15 @@ with st.form("Login Form", border=True):
         user_data = verify_login(clean_user, clean_pass)
         if user_data:
             if not user_data.get("is_approved", False):
-                st.error("🚨 Your account is pending approval by an admin.")
+                st.error("🚨 Your account is pending approval.")
+            elif user_data.get("is_parent") and not user_data.get("email_verified", False):
+                st.error("📧 Please verify your email before logging in. Check your inbox.")
             else:
                 st.session_state.is_admin = user_data.get("is_admin", False)
+                st.session_state.is_parent = user_data.get("is_parent", False)
                 st.session_state.user_id = clean_user
                 st.toast("Welcome back!")
-                st.rerun()  # Refresh main.py to show Home
+                st.rerun()
         else:
             st.error("Invalid username or password")
 

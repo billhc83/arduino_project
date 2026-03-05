@@ -35,7 +35,7 @@ def send_verification_email(username: str, email: str):
     verification_url = f"{BASE_URL}?verify_token={token}"
     
     resend.Emails.send({
-        "from": "noreply@kidscode.streamlit.app",  # replace with your verified domain
+        "from": "noreply@kidscode.ca",  # replace with your verified domain
         "to": email,
         "subject": "Verify your account",
         "html": f"""

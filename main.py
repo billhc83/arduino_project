@@ -1,12 +1,58 @@
 import streamlit as st
 from utils.utils import get_automated_pages, sticky_navbar
 from data_base import get_user_progress
+from data_base import conn, text
 
 # ---------------- 1. Session defaults ----------------
 st.session_state.setdefault("user_id", None)
 st.session_state.setdefault("is_admin", False)
 st.session_state.setdefault("unlocked_pages", [])
 st.session_state.setdefault("current_page", None)
+
+if st.session_state.pop("verify_success", False):
+    st.success("✅ Email verified! You can now log in.")
+
+# ---------------- 1b. Email verification handler ----------------
+params = st.query_params
+if "verify_token" in params:
+    token = params["verify_token"]
+    result = conn.query(
+        """
+        SELECT username, expires_at 
+        FROM private.email_verifications 
+        WHERE token = :token
+        """,
+        params={"token": token},
+        ttl=0
+    )
+    if result.empty:
+        st.error("❌ Invalid or expired verification link.")
+    else:
+        from datetime import datetime, timezone
+        expires_at = result.iloc[0]["expires_at"]
+        if datetime.now(timezone.utc) > expires_at:
+            st.error("❌ This verification link has expired. Please register again.")
+        else:
+            username = result.iloc[0]["username"]
+            with conn.session as s:
+                s.execute(
+                    text("""
+                        UPDATE public.users 
+                        SET email_verified = TRUE, is_approved = TRUE
+                        WHERE LOWER(username) = LOWER(:username)
+                    """),
+                    {"username": username}
+                )
+                s.execute(
+                    text("""
+                        DELETE FROM private.email_verifications 
+                        WHERE token = :token
+                    """),
+                    {"token": token}
+                )
+                s.commit()
+            st.session_state.verify_success = True
+            st.query_params.clear()
 
 # ---------------- 2. Load all pages ----------------
 pages_map = get_automated_pages("pages")
@@ -21,12 +67,17 @@ if st.session_state.user_id:
 
 # ---------------- 4. Determine unlocked pages ----------------
 if st.session_state.user_id:
-    unlocked_pages = ["Home", "Getting_Started"] + user_steps
-    if "Feedback" not in unlocked_pages:
-        unlocked_pages.append("Feedback")
-    if st.session_state.is_admin in [True, "true", "True"]:
-        if "Admin" not in unlocked_pages:
-            unlocked_pages.append("Admin")
+    # parent account — only sees parent dashboard
+    if st.session_state.get("is_parent", False):
+        unlocked_pages = ["Parent_Dashboard"]
+    else:
+        # regular user or child account
+        unlocked_pages = ["Home", "Getting_Started"] + user_steps
+        if "Feedback" not in unlocked_pages:
+            unlocked_pages.append("Feedback")
+        if st.session_state.is_admin in [True, "true", "True"]:
+            if "Admin" not in unlocked_pages:
+                unlocked_pages.append("Admin")
 else:
     unlocked_pages = ["Login", "Register"]
 
@@ -77,3 +128,4 @@ else:
         pg.run()
 
 # ---------------- 8. Sticky navbar ----------------
+

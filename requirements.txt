@@ -4,6 +4,7 @@ psycopg2-binary
 pandas
 requests
 bcrypt
+resend
 
 altair==6.0.0
 altex==0.2.0

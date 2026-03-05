@@ -183,7 +183,7 @@ with col1:
 
     So parts like LEDs and buttons usually sit across the river.        
 
-    ## Rule 3 -  The rows on the long egdes are connected
+    ## Rule 3 -  The rows on the long edges are connected
 
     The long lines on the sides are electricity highways:
 
