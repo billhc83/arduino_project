@@ -9,8 +9,8 @@ def img_to_base64(path):
     return f"data:image/{ext};base64,{b64}"
 
 from utils.utils import hover_zoom_html
-engine_controls = hover_zoom_html("graphics/project_twelve_circuit.png", height=200, key="schematic")
-patrol_lights = hover_zoom_html("graphics/project_thirteen_circuit.png", height= 200, key="schematic" )
+engine_controls = hover_zoom_html("graphics/project_twelve_circuit.png", height=200, key="engine_schematic")
+patrol_lights = hover_zoom_html("graphics/project_thirteen_circuit.png", height= 200, key="patrol_schematic" )
 
 DRAWER_CONTENT = {
     "engine_start": {
