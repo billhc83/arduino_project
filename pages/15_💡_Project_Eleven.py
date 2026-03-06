@@ -59,7 +59,7 @@ from utils.assembly_guide import assembly_guide, coordinate_picker
 
 steps = [
     {
-        "instruction": "Lets Light This Car UP!!!",
+        "instruction": "Engage Engines!!!!",
         "tip": "Press the next button for a step by step guide",  
     },
     {
@@ -72,7 +72,7 @@ steps = [
         #"label": "LED +",
     },
     {
-        "instruction": "Place the first leg in row 8, column F. <br>Place the second leg in row 10, column F.<br>Place the third leg in row 8 column E.<br>Place the last leg in row 10 column E",
+        "instruction": "Place the first leg in row 24, column E. <br>Place the second leg in row 23, column E.<br>Place the third leg in row 8 column E.<br>Place the last leg in row 10 column E",
         "tip": "This button starts the engine.",
         "highlights": [
              {"pos": (719, 239, 811, 350), "shape": "rect"}
@@ -197,7 +197,7 @@ with tab1:
 
 with tab2:
 
-  assembly_guide("graphics/project_twelve_circuit.png", steps, "Project 12: Engine Start Sequence (Part 1)")
+  assembly_guide("graphics/project_twelve_circuit.png", steps, "Project 11: Engine System Start")
 
 
 st.markdown("""
@@ -267,3 +267,12 @@ arduino_block_coder(
     username=st.session_state.get("user_id"),
     height=620 
 )
+
+pages_map = get_automated_pages("pages")
+buttoncol1, buttoncol2 = st.columns([1,3])
+with buttoncol1:
+    if st.button("Next Project", type="primary"):
+        complete_step_and_continue(pages_map, current_page_title=st.session_state.get("current_page"))
+
+with buttoncol2:
+    st.markdown("#### ⬅️ Click here to secure the next mission!")

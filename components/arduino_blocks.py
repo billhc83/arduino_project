@@ -178,13 +178,56 @@ void loop() {
   }
 }
 """,
-    'Serial Hello': """
-void setup() {
-  Serial.begin(9600);
-  Serial.print("Hello World");
+    'patrol_alarm': """
+int switchPin = 12;
+
+int redLED = 8;
+int blueLED = 6;
+int clearLED = 4;
+
+void setup()
+{
+  pinMode(switchPin, INPUT_PULLUP);
+
+  pinMode(redLED, OUTPUT);
+  pinMode(blueLED, OUTPUT);
+  pinMode(clearLED, OUTPUT);
 }
-void loop() {
-  delay(1000);
+
+void loop()
+{
+
+  // Check if the switch is ON
+  if (digitalRead(switchPin) == LOW)
+  {
+
+    // Red flash
+    digitalWrite(redLED, HIGH);
+    delay(150);
+    digitalWrite(redLED, LOW);
+
+    // Blue flash
+    digitalWrite(blueLED, HIGH);
+    delay(150);
+    digitalWrite(blueLED, LOW);
+
+    // Clear flash
+    digitalWrite(clearLED, HIGH);
+    delay(150);
+    digitalWrite(clearLED, LOW);
+
+  }
+
+  else
+  {
+
+    // Switch OFF → everything OFF
+    digitalWrite(redLED, LOW);
+    digitalWrite(blueLED, LOW);
+    digitalWrite(clearLED, LOW);
+
+  }
+
 }
 """,
     'Button Read': """
