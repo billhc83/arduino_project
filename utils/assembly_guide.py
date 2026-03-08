@@ -103,6 +103,28 @@ def draw_step_overlay(image_path: str, step: dict, step_number: int, total_steps
                     radius=12,
                     fill=(0, 0, 0, 0),
                 )
+            elif shape == "directed_arrow":
+                # Punch a clear path along the arrow shaft
+                x1, y1 = pos[0]
+                x2, y2 = pos[1]
+                arrow_w = 18 + pad * 2
+                dx, dy = x2 - x1, y2 - y1
+                length = math.sqrt(dx*dx + dy*dy)
+                if length > 0:
+                    angle  = math.atan2(dy, dx)
+                    cos_a, sin_a = math.cos(angle), math.sin(angle)
+                    hw = arrow_w / 2
+                    poly = [
+                        (x1 + -sin_a*hw, y1 + cos_a*hw),
+                        (x1 -  -sin_a*hw, y1 - cos_a*hw),
+                        (x2 -  -sin_a*hw, y2 - cos_a*hw),
+                        (x2 + -sin_a*hw, y2 + cos_a*hw),
+                    ]
+                    vd.polygon(poly, fill=(0, 0, 0, 0))
+                vd.ellipse([(pos[0][0]-arrow_w//2, pos[0][1]-arrow_w//2),
+                            (pos[0][0]+arrow_w//2, pos[0][1]+arrow_w//2)], fill=(0,0,0,0))
+                vd.ellipse([(pos[1][0]-arrow_w//2, pos[1][1]-arrow_w//2),
+                            (pos[1][0]+arrow_w//2, pos[1][1]+arrow_w//2)], fill=(0,0,0,0))
             elif shape in ("line", "polyline"):
                 # Draw thick line cutout for wire paths
                 points = pos  # list of (x, y) tuples
@@ -192,6 +214,23 @@ def draw_step_overlay(image_path: str, step: dict, step_number: int, total_steps
             direction = hl.get("direction", "down")
             draw_arrow_highlight(pos[0], pos[1], color, direction)
 
+        elif shape == "directed_arrow":
+            # Straight arrow: pos is [(x1,y1), (x2,y2)]
+            ax, ay = pos[0]
+            bx, by = pos[1]
+            shaft_color = (255, 80, 80, 240)
+            draw.line([(ax, ay), (bx, by)], fill=shaft_color, width=4)
+            angle    = math.atan2(by - ay, bx - ax)
+            head_len = 22
+            head_ang = math.pi / 6
+            draw.polygon([
+                (bx, by),
+                (bx - head_len * math.cos(angle - head_ang),
+                 by - head_len * math.sin(angle - head_ang)),
+                (bx - head_len * math.cos(angle + head_ang),
+                 by - head_len * math.sin(angle + head_ang)),
+            ], fill=shaft_color)
+
     # ── LEGACY arrow_from / arrow_to ─────────────────────────────────────
     if "arrow_from" in step and "arrow_to" in step:
         ax, ay = step["arrow_from"]
@@ -236,7 +275,7 @@ def draw_step_overlay(image_path: str, step: dict, step_number: int, total_steps
             offset_x   = label_item.get("offset_x", 30)
             offset_y   = label_item.get("offset_y", -14)
             font_size  = label_item.get("font_size", 14)
-            custom_pos = label_item.get("pos")  # optional override
+            custom_pos = label_item.get("pos")   # absolute (x,y) overrides offset
         else:
             label_text = label_item
             offset_x   = 30
