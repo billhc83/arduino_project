@@ -278,6 +278,8 @@ Each variable should point to the **pin number connected to that part**.
 Look at the wiring diagram and choose the correct pin numbers.
 
 Once these variables are created, the rest of the code will use their names to control the lights.
+
+We have filled in some of the blocks to guide you. Can you recognize the pattern, to fill in the rest of the blocks.  Take your time and don't give up.
 """
 
 CHALLENGES_MD = """
@@ -373,8 +375,8 @@ if CHALLENGES_MD:
 
 pages_map = get_automated_pages("pages")
 buttoncol1, buttoncol2 = st.columns([1, 3])
-with buttoncol1:
-    if st.button("Next Project", type="primary"):
-        complete_step_and_continue(pages_map, current_page_title=st.session_state.get("current_page"))
+#with buttoncol1:
+ #   if st.button("Next Project", type="primary"):
+  #      complete_step_and_continue(pages_map, current_page_title=st.session_state.get("current_page"))
 with buttoncol2:
     st.markdown("#### ⬅️ Click here to secure the next mission!")

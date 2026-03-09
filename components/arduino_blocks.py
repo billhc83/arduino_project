@@ -180,7 +180,7 @@ void loop() {
 
   if (digitalRead(9) == LOW) {   // Switch ON
 
-    //## digitalWrite(2, HIGH);        // Light ON (armed)
+    digitalWrite(2, HIGH);        // Light ON (armed)
 
     if (digitalRead(7) == LOW) {
       digitalWrite(5, HIGH);     // Start engine
@@ -218,18 +218,18 @@ void loop()
   {
 
     // Red flash
-    digitalWrite(redLED, HIGH);
+    //## digitalWrite(redLED, HIGH);
     delay(150);
-    digitalWrite(redLED, LOW);
+    //## digitalWrite(redLED, LOW);
 
     // Blue flash
-    digitalWrite(blueLED, HIGH);
+    //## digitalWrite(blueLED, HIGH);
     delay(150);
     digitalWrite(blueLED, LOW);
 
     // Clear flash
     digitalWrite(clearLED, HIGH);
-    delay(150);
+    //##delay(150);
     digitalWrite(clearLED, LOW);
 
   }
@@ -238,7 +238,7 @@ void loop()
   {
 
     // Switch OFF → everything OFF
-    digitalWrite(redLED, LOW);
+    //## digitalWrite(redLED, LOW);
     digitalWrite(blueLED, LOW);
     digitalWrite(clearLED, LOW);
 

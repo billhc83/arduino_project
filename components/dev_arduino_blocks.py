@@ -725,7 +725,7 @@ def arduino_block_coder(height=550, preset=None, drawer_content=None, pin_refs=N
         "  inputs:[{t:'number',l:'Min'},{t:'number',l:'Max'}],"
         "  genExpr:function(p){return 'random('+(p[0]||0)+', '+(p[1]||100)+')';}},"
         "math:{allowed:[],asStatement:false,asExpr:true,"
-        "  inputs:[{t:'expr',l:'A',fallback:'0'},{t:'sel',l:'Op',o:['+','-','*','/','%']},{t:'expr',l:'B',fallback:'0'}],"
+        "  inputs:[{t:'expr',l:'A',fallback:'0'},{t:'sel',l:'Op',o:[{v:'+',lb:'plus'},{v:'-',lb:'minus'},{v:'*',lb:'multiply'},{v:'/',lb:'divide'},{v:'%',lb:'modulo'}]},{t:'expr',l:'B',fallback:'0'}],"
         "  genExpr:function(p,ch){"
         "    var a=genExpr(ch&&ch[0],p[0],'0'),op=p[1]||'+',b=genExpr(ch&&ch[2],p[2],'0');"
         "    return '('+a+' '+op+' '+b+')';}},"
