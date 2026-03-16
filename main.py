@@ -1,18 +1,18 @@
 import streamlit as st
-from utils.utils import get_automated_pages, sticky_navbar
-from data_base import get_user_progress
-from data_base import conn, text
+from utils.utils import get_automated_pages, build_custom_sidebar, normalize, logout_button
+from data_base import get_user_progress, log_final_activity, conn, text
+import time
 
-# ---------------- 1. Session defaults ----------------
-st.session_state.setdefault("user_id", None)
-st.session_state.setdefault("is_admin", False)
-st.session_state.setdefault("unlocked_pages", [])
+# ── 1. Session defaults ───────────────────────────────────────────────────────
+st.session_state.setdefault("user_id",      None)
+st.session_state.setdefault("is_admin",     False)
+st.session_state.setdefault("is_parent",    False)
 st.session_state.setdefault("current_page", None)
 
 if st.session_state.pop("verify_success", False):
     st.success("✅ Email verified! You can now log in.")
 
-# ---------------- 1b. Email verification handler ----------------
+# ── 2. Email verification handler ────────────────────────────────────────────
 params = st.query_params
 if "verify_token" in params:
     token = params["verify_token"]
@@ -54,24 +54,23 @@ if "verify_token" in params:
             st.session_state.verify_success = True
             st.query_params.clear()
 
-# ---------------- 2. Load all pages ----------------
-pages_map = get_automated_pages("pages")
+# ── 3. Build flat page map ────────────────────────────────────────────────────
+is_logged_in = st.session_state.get("user_id") is not None
+default_page = "Home" if is_logged_in else "Login"
+pages_map    = get_automated_pages("pages", default_page=default_page)
 st.session_state.pages_map = pages_map
 
-# ---------------- 3. Load user progress ----------------
+# ── 4. Load user progress ─────────────────────────────────────────────────────
 user_steps = []
-if st.session_state.user_id:
-    db_steps = get_user_progress(st.session_state.user_id)
-    # convert to step IDs (filenames without .py)
-    user_steps = [s.replace(" ", "_") for s in db_steps]  # match pages_map keys
+if is_logged_in:
+    db_steps   = get_user_progress(st.session_state.user_id)
+    user_steps = [s.replace(" ", "_") for s in db_steps]
 
-# ---------------- 4. Determine unlocked pages ----------------
-if st.session_state.user_id:
-    # parent account — only sees parent dashboard
+# ── 5. Determine unlocked pages ───────────────────────────────────────────────
+if is_logged_in:
     if st.session_state.get("is_parent", False):
         unlocked_pages = ["Parent_Dashboard"]
     else:
-        # regular user or child account
         unlocked_pages = ["Home", "Getting_Started"] + user_steps
         if "Feedback" not in unlocked_pages:
             unlocked_pages.append("Feedback")
@@ -82,50 +81,17 @@ else:
     unlocked_pages = ["Login", "Register"]
 
 st.session_state.unlocked_pages = unlocked_pages
+unlocked_norm = set(normalize(p) for p in unlocked_pages)
 
-# Load pages
-pages_map = get_automated_pages("pages")
-st.session_state.pages_map = pages_map
+# ── 6. Navigation — hidden, only unlocked pages ───────────────────────────────
+unlocked_page_objs = [v for k, v in pages_map.items() if normalize(k) in unlocked_norm]
+pg = st.navigation(unlocked_page_objs, position="hidden")
+if pg:
+    log_final_activity()
+    st.session_state.current_page = pg.title
+    st.session_state.start_time   = time.time()
+    pg.run()
+# ── 7. Custom sidebar ─────────────────────────────────────────────────────────
+build_custom_sidebar(pages_map, unlocked_norm)
 
-# Normalize
-def normalize(s):
-    return s.lower().replace(" ", "_").strip()
-
-pages_map_norm = {normalize(k): v for k, v in pages_map.items()}
-unlocked_pages_norm = [normalize(p) for p in st.session_state.get("unlocked_pages", [])]
-
-# Build allowed_pages safely
-allowed_pages = [v for k, v in pages_map_norm.items() if k in unlocked_pages_norm]
-
-#st.write("Allowed pages:", [p.title for p in allowed_pages])  # debug
-
-
-# Optional debug (can remove later)
-#st.write("Allowed pages:", [p.title for p in allowed_pages])
-
-
-# ---------------- 6. Ensure current page is valid ----------------
-if st.session_state.get("current_page") not in pages_map:
-    if st.session_state.user_id and "Home" in pages_map:
-        st.session_state.current_page = "Home"
-    else:
-        st.session_state.current_page = list(pages_map.keys())[0]
-if st.session_state.user_id:
-    sticky_navbar()
-    
-st.session_state.pages_map = pages_map
-# ---------------- 7. Navigation widget ----------------
-if not allowed_pages:
-    st.error("No pages available! Check your pages folder and unlocked_pages.")
-else:
-    pg = st.navigation(allowed_pages)
-    if pg:
-        from data_base import log_final_activity
-        import time
-        log_final_activity()
-        st.session_state.current_page = pg.title
-        st.session_state.start_time = time.time()
-        pg.run()
-
-# ---------------- 8. Sticky navbar ----------------
-
+# ── 8. Run current page ───────────────────────────────────────────────────────

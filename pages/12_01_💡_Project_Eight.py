@@ -253,7 +253,7 @@ Open your Arduino Serial Monitor
 
 st.info("""
 ### 🏆 Grand Master Challenges
-🧪 **Challenge 1:** Can you make the Dragon sound **SAD** by changing `800` to a low `150`? 😢🐲
+🧪 **Challenge 1:** Can you make the Dragon sound **SAD** by changing `800` to a low `500`? 😢🐲
 
 🧪 **Challenge 2:** Change the code so the light flashes **Super Fast** by changing the `delay` to `50`! ⚡
 """)

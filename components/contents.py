@@ -93,6 +93,154 @@ The switch is the boss.
             }
         }
     },
+
+    "cb_step1": {
+    "title": "📘 Code Cracker Setup Guide",
+    "tip": "Create the memory boxes the computer needs to run the game.",
+    "tabs": {
+        "mission": {
+            "label": "🧠 Mission",
+            "content": """
+
+<h3>🕵️ Welcome to the Spy Training Lab</h3>
+
+<p>
+A secret computer system has locked a message behind a password.
+Your job is to build a <b>Code Cracker</b> that helps players guess the password.
+</p>
+
+<p>
+Each time the player types a word, the computer will check how many letters match
+the secret password.
+</p>
+
+<p>
+Before the game can run, the computer needs some <b>memory boxes</b> called
+<b>variables</b>.
+</p>
+
+<p>
+Variables let the computer remember things like:
+</p>
+
+<ul>
+<li>The <b>secret password</b></li>
+<li>The <b>number of matching letters</b></li>
+<li>Whether the puzzle has been <b>solved</b></li>
+</ul>
+
+<p>
+Your mission is to create these variables so the computer can run the game.
+</p>
+
+"""
+        },
+
+        "wiring": {
+            "label": "🧾 Variables",
+            "content": """
+
+<b>The Secret Word</b>
+
+The first variable stores the password the player must guess.
+
+Example:
+
+<pre>
+String answer = "SPARK";
+</pre>
+
+The word must be inside <b>quotes</b> because it is a <b>String</b>.
+
+A String is text made from letters.
+
+Examples of Strings:
+
+<pre>
+"ROBOT"
+"SPARK"
+"HELLO"
+</pre>
+
+The program will compare the player's guess to this word.
+
+---
+
+<b>Tracking the Score</b>
+
+<pre>
+int likeness = 0;
+</pre>
+
+The word <b>int</b> means <b>integer</b>, which is a whole number.
+
+This variable counts how many letters match the password.
+
+Every time a letter matches, the program will add <b>1</b> to this number.
+
+At the start of the game we set it to <b>0</b> because nothing has been checked yet.
+
+"""
+        },
+
+        "logic": {
+            "label": "🧩 Logic",
+            "content": """
+
+<b>Is the Puzzle Solved?</b>
+
+<pre>
+bool solved = false;
+</pre>
+
+The word <b>bool</b> means <b>boolean</b>.
+
+A boolean can only be one of two values:
+
+<pre>
+true
+false
+</pre>
+
+Think of it like a switch.
+
+false → the code is still locked 🔒  
+true → the player cracked the code 🔓
+
+When the game starts, we set:
+
+<pre>
+solved = false;
+</pre>
+
+because the player has not guessed the password yet.
+
+Later in the program, when the guess is correct, the computer will change it to:
+
+<pre>
+solved = true;
+</pre>
+
+and the computer will announce:
+
+<b>ACCESS GRANTED.</b>
+
+---
+
+<b>Game Memory</b>
+
+The computer now remembers three important things:
+
+• <b>answer</b> → the secret password  
+• <b>likeness</b> → how many letters match  
+• <b>solved</b> → whether the puzzle is finished
+
+These variables power the entire game.
+
+"""
+        }
+    }
+},
     "patrol_alarm": {
     "title": "📘 Light Bar Control Guide",
     "tip": "Build the flashing pattern that controls the patrol light bar.",

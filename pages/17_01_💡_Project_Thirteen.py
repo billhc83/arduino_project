@@ -7,7 +7,7 @@ from components.contents import DRAWER_CONTENT
 from PIL import Image
 from utils.utils import hover_zoom_at_cursor, complete_step_and_continue, get_automated_pages
 from utils.assembly_guide import assembly_guide
-from utils.step_builder import build_step, intro_step, rect, circle, line, label
+from utils.step_builder import build_step, intro_step, rect, circle, line
 
 st.set_page_config(layout="wide")
 
@@ -15,11 +15,11 @@ st.set_page_config(layout="wide")
 #  PAGE IDENTITY  — edit these 4 lines for every new project
 # ════════════════════════════════════════════════════════════
 
-PAGE_TITLE       = "Project Thirteen: Your Title Here"   # shown in the assembly guide header
-BANNER_IMAGE     = "graphics/your_banner.png"            # top banner
-CIRCUIT_IMAGE    = "graphics/your_circuit.png"           # used in both tabs
-ARDUINO_PRESET   = "your_preset"                         # matches arduino_block_coder preset key
-ARDUINO_PIN_REFS = "your_preset"                         # usually same as preset
+PAGE_TITLE       = "Project Thirteen: The Reaction Timer"   # shown in the assembly guide header
+BANNER_IMAGE     = "graphics/project_fourteen_banner.png"            # top banner
+CIRCUIT_IMAGE    = "graphics/reaction_timer_circuit.png"           # used in both tabs
+ARDUINO_PRESET   = "reaction_timer"                         # matches arduino_block_coder preset key
+ARDUINO_PIN_REFS = "reaction_timer"                         # usually same as preset
 
 # ════════════════════════════════════════════════════════════
 #  INTRO MARKDOWN  — replace the triple-quoted block below
@@ -28,15 +28,49 @@ ARDUINO_PIN_REFS = "your_preset"                         # usually same as prese
 INTRO_MD = """
 <div style="max-width: 850px; margin: auto;">
 
-## 🚀 Welcome to [Your Project Name]
+## ⏱️ Project 13: The Reaction Timer
 
-Write your intro narrative here.
+🧪 Welcome to the **Arduino Reaction Lab!**
+
+Today you are going to build a **reaction timer**.
+
+Scientists use timers like this to measure **how fast people react**.
+
+But first… you need to build the machine!
+
+---
+
+## 🧠 The Story
+
+Imagine you are running a **super secret training program for astronauts**. 🚀
+
+Astronauts need **fast reactions** to fly spacecraft safely.
+
+Your job is to build a **reaction testing device**.
+
+When the astronaut presses the button…
+
+⏱️ the timer starts.
+
+When they press the button again…
+
+⏱️ the timer stops!
+
+The computer will then tell us **how long it took**.
 
 ---
 
 ## 🎯 Your Mission
 
-Describe the parts and the rules here.
+Build a timer that:
+
+👉 Starts when the button is pressed  
+👉 Stops when the button is pressed again  
+👉 Prints the reaction time to the **Serial Monitor**
+
+Can you build a machine that measures **human reaction speed?**
+
+Let's find out! 🚀
 
 </div>
 """
@@ -70,26 +104,30 @@ STEPS = [
 
     # ── Step 1 ───────────────────────────────────────────────
     build_step(
-        "Place [component] in row X, column Y.",
-        "Tip about what this component does.",
-        rect(0, 0, 100, 100),          # replace with real coords
+    "Place the button onto the breadboard.<br>Place the first leg into row 10, column E.<br>Place the second leg into row 8, column E.<br>Place the third leg into row 10, column F.<br>Place the fourth leg into row 8, column F.",
+    "Touch the button to start the timer.  Press it again to stop it. Try to stop it at exactly 5 seconds (remember 5 seconds is 5000 milliseconds",
+    rect(708, 249, 818, 340),
     ),
 
     # ── Step 2 ───────────────────────────────────────────────
     build_step(
-        "Place [component] in row X, column Y.",
-        "Tip about this step.",
-        rect(0, 0, 100, 100),
-        line((0, 0), (100, 100)),      # add as many shapes as needed
+    "Place one end of the wire in Arduino Pin 2.<br>Place the other end in row 8, column D.",
+    "This is the signal for our timer button",
+    line((361, 493), (384, 487), (568, 342), (748, 345), width=20),
     ),
 
     # ── Wire Steps ───────────────────────────────────────────
     build_step(
-        "Place one end of the wire into Arduino Pin X.<br>"
-        "Place the other end in row Y column Z.",
-        "Tip about what this wire does.",
-        line((0, 0), (100, 0), (100, 100)),
+    "Place one end of the wire in row 10, column G.<br>Place the other end in the negative / - rail.",
+    "This completes our button loop",
+    line((787, 253), (768, 98), width=20),
     ),
+
+    # ── Wire Steps ───────────────────────────────────────────
+    build_step(
+    "Place one end of the wire in Arduino Pin GND.<br>Place the other end in the negative / - rail.",
+    "This helps complete our circuit loop",
+    )
 
     # Add more steps by copying any build_step() block above.
 ]
@@ -100,9 +138,68 @@ STEPS = [
 # ════════════════════════════════════════════════════════════
 
 WIRING_NOTES_MD = """
-### 🔎 How to Read the Wiring Diagram
+### 🧠 What Are We Learning?
 
-Add any reading-the-diagram guidance here, or delete this section entirely.
+In this project we are learning how a program can **measure time**.
+
+Computers are very good at keeping track of time.
+
+Your Arduino has a special function called:
+
+`millis()`
+
+This function tells us **how many milliseconds have passed since the Arduino started running**.
+
+A **millisecond** is very tiny!
+
+
+1000 milliseconds = 1 second
+
+
+---
+
+### ⏱️ How Our Timer Works
+
+Our program does something very clever.
+
+When the button is pressed the **first time**, the Arduino remembers the time.
+
+
+startTime = millis()
+
+
+Now the Arduino knows **when the timer started**.
+
+---
+
+When the button is pressed **again**, the program checks the time again.
+
+
+time = millis() - startTime
+
+
+Now the Arduino knows **how much time passed**.
+
+It prints the result to the **Serial Monitor**.
+
+---
+
+### 🔎 Reading the Wiring Diagram
+
+Look carefully at the circuit diagram.
+
+You should notice:
+
+🔌 The button is connected to **Pin 2**  
+⚡ One side of the button goes to **ground**
+
+This allows the Arduino to detect **when the button is pressed**.
+
+Programs and circuits **work together**.
+
+The wires send signals…  
+and the code decides **what to do with them!**
+
 """
 
 # ════════════════════════════════════════════════════════════
@@ -111,9 +208,63 @@ Add any reading-the-diagram guidance here, or delete this section entirely.
 # ════════════════════════════════════════════════════════════
 
 CHALLENGES_MD = """
-### ⭐ Bonus Challenges
+### 🧩 Bonus Challenges
 
-Add challenge content here, or delete this section.
+Ready to upgrade your timer? Try these!
+
+---
+
+### 🟢 Challenge 1 — Show Seconds
+
+Right now the timer prints **milliseconds**.
+
+Example:
+
+
+3842
+
+
+That means **3.842 seconds**.
+
+Can you change the program so it prints **seconds instead**?
+
+Hint: divide the time by **1000**.
+
+---
+
+### 🟡 Challenge 2 — Add a Timer Light
+
+Add an **LED** to your circuit.
+
+Make the LED behave like this:
+
+💡 LED ON → timer running  
+💡 LED OFF → timer stopped
+
+This way we can **see when the timer is active**.
+
+---
+
+### 🔴 Challenge 3 — The 5 Second Challenge
+
+Turn your timer into a **game! 🎮**
+
+Press the button to start the timer.
+
+Now try to press the button again when you think **exactly 5 seconds** have passed.
+
+The Arduino will tell you **how close you were**.
+
+Example:
+
+
+5032
+You were 32 milliseconds late!
+
+
+Can you get **within 50 milliseconds**?
+
+That's some serious timing skill! ⏱️
 """
 
 # ════════════════════════════════════════════════════════════

@@ -19,7 +19,7 @@ Today, we are mastering **Variable Slots**. In engineering, a "Variable" is just
 We have three futuristic battery types and one very delicious lunch to test:
 *   **Zappy-Zucchini Juice** 🥒⚡
 *   **Sparky-Squirrel Static** 🐿️💥
-*   **Mega-Glow Moon-Milk** 🥛🌙
+*   **Mega-Glow Lightening-Milk** 🥛🌙
 *   **The Crusty Club Sandwich** 🥪
 
 Let's see what happens when we try to power our machine with a sandwich!
@@ -90,7 +90,7 @@ st.code("""
 // 📦 This is our Universal Power Slot!
 // Remove the // from the one you want to test and upload:
 
-// String powerSlot = "Mega-Glow Moon-Milk"; 
+// String powerSlot = "Mega-Glow Lightening-Milk"; 
 // String powerSlot = "Sparky-Squirrel Static";
 // String powerSlot = "Zappy-Zucchini Juice";
 String powerSlot = "Crusty Club Sandwich"; 
@@ -106,7 +106,7 @@ void setup() {
 void loop() {
   // 🔍 THE INSPECTION: Matching names to numbers!
   
-  if (powerSlot == "Mega-Glow Moon-Milk") {
+  if (powerSlot == "Mega-Glow Lightening-Milk") {
     currentEnergy = 100; // 🥛 Huge Power!
   } 
   else if (powerSlot == "Sparky-Squirrel Static") {
@@ -149,7 +149,7 @@ The Arduino will **not read** any line that starts with `//`.
 Here is how the code starts **right now**:
 
 <pre><code>
-// String powerSlot = "Mega-Glow Moon-Milk"; 
+// String powerSlot = "Mega-Glow Lightening-Milk"; 
 // String powerSlot = "Sparky-Squirrel Static";
 // String powerSlot = "Zappy-Zucchini Juice";
 String powerSlot = "Crusty Club Sandwich"; 
@@ -165,10 +165,10 @@ String powerSlot = "Crusty Club Sandwich";
 
 To test a different power slot, you must **move the slashes**.
 
-Example: to turn ON **Mega-Glow Moon-Milk**:
+Example: to turn ON **Mega-Glow Lightening-Milk**:
 
 <pre><code>
-String powerSlot = "Mega-Glow Moon-Milk"; 
+String powerSlot = "Mega-Glow Lightening-Milk"; 
 // String powerSlot = "Sparky-Squirrel Static";
 // String powerSlot = "Zappy-Zucchini Juice";
 // String powerSlot = "Crusty Club Sandwich"; 
@@ -187,7 +187,7 @@ What you did:
 If **every** powerSlot line starts with `//`:
 
 <pre><code>
-// String powerSlot = "Mega-Glow Moon-Milk"; 
+// String powerSlot = "Mega-Glow Lightening-Milk"; 
 // String powerSlot = "Sparky-Squirrel Static";
 // String powerSlot = "Zappy-Zucchini Juice";
 // String powerSlot = "Crusty Club Sandwich"; 

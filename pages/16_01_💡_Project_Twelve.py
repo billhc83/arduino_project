@@ -275,11 +275,27 @@ clearLED
 
 Each variable should point to the **pin number connected to that part**.
 
+In the Global section define the variables.
+
+For example: intvar buttonPin 12
+
+Use this same format for the other variables listed
+
 Look at the wiring diagram and choose the correct pin numbers.
 
 Once these variables are created, the rest of the code will use their names to control the lights.
 
-We have filled in some of the blocks to guide you. Can you recognize the pattern, to fill in the rest of the blocks.  Take your time and don't give up.
+In the Setup section we need to tell the Arduino what each of our pins will do.  Will it be an INPUT or and OUTPUT
+
+For example pinmode buttonPin INPUT_PULLUP (lights will be outputs)
+
+Use this same format for all of our inputs and outputs.
+
+Next we have to turn the lights on and off in the right order. 
+
+We have filled in some of the blocks to guide you. Can you recognize the pattern, to fill in the rest of the blocks.
+
+Take your time and don't give up.
 """
 
 CHALLENGES_MD = """
@@ -375,8 +391,8 @@ if CHALLENGES_MD:
 
 pages_map = get_automated_pages("pages")
 buttoncol1, buttoncol2 = st.columns([1, 3])
-#with buttoncol1:
- #   if st.button("Next Project", type="primary"):
-  #      complete_step_and_continue(pages_map, current_page_title=st.session_state.get("current_page"))
+with buttoncol1:
+   if st.button("Next Project", type="primary"):
+        complete_step_and_continue(pages_map, current_page_title=st.session_state.get("current_page"))
 with buttoncol2:
     st.markdown("#### ⬅️ Click here to secure the next mission!")

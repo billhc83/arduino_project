@@ -1,5 +1,6 @@
 import re
 import streamlit.components.v1 as components
+from components.presets import PRESETS, PIN_REFS
 
 
 # ── Sketch parser ─────────────────────────────────────────────────────
@@ -30,33 +31,186 @@ def extract_condition(code, start):
     return '', len(code)
 
 
-def parse_condition(cond_str):
+def parse_condition(cond_str, fill_conditions=False):
     result = {
-        'left': '', 'op': '==', 'right': '',
-        'joiner': 'none', 'left2': '', 'op2': '==', 'right2': ''
+        'leftExpr': None, 'op': '==', 'rightExpr': None,
+        'joiner': 'none', 'leftExpr2': None, 'op2': '==', 'rightExpr2': None
     }
     and_match = re.search(r'\s*(&&|\|\|)\s*', cond_str)
     if and_match:
         result['joiner'] = 'and' if and_match.group(1) == '&&' else 'or'
-        parse_side(cond_str[:and_match.start()].strip(), result, 'left',  'op',  'right')
-        parse_side(cond_str[and_match.end():].strip(),   result, 'left2', 'op2', 'right2')
+        parse_side(cond_str[:and_match.start()].strip(), result, 'leftExpr',  'op',  'rightExpr',  fill_conditions)
+        parse_side(cond_str[and_match.end():].strip(),   result, 'leftExpr2', 'op2', 'rightExpr2', fill_conditions)
     else:
-        parse_side(cond_str, result, 'left', 'op', 'right')
+        parse_side(cond_str, result, 'leftExpr', 'op', 'rightExpr', fill_conditions)
     return result
 
 
-def parse_side(s, result, lkey, opkey, rkey):
+def parse_side(s, result, lkey, opkey, rkey, fill_conditions=False):
+    process = (lambda node: node) if fill_conditions else strip_expr_values
     for op in ['>=', '<=', '!=', '==', '>', '<']:
         if op in s:
             parts = s.split(op, 1)
-            result[lkey]  = parts[0].strip()
+            left_str  = parts[0].strip()
+            right_str = parts[1].strip()
             result[opkey] = op
-            result[rkey]  = parts[1].strip()
+            result[lkey]  = process(parse_expr(left_str))  if left_str  else None
+            result[rkey]  = process(parse_expr(right_str)) if right_str else None
             return
-    result[lkey] = s.strip()
+    result[lkey] = process(parse_expr(s.strip())) if s.strip() else None
 
 
-def parse_blocks(code):
+def parse_expr(s):
+    """Parse an expression string into an exChildren node tree.
+    Returns a node dict: {type, params, children} matching JS makeExNode output.
+    Falls back to a value node for anything unrecognised.
+    """
+    s = s.strip()
+
+    # Strip outer parens: (expr) -> parse inside
+    if s.startswith('(') and s.endswith(')'):
+        inner = s[1:-1].strip()
+        # Only strip if parens are balanced (not something like (a+b)*(c+d))
+        depth = 0
+        balanced = True
+        for i, ch in enumerate(inner):
+            if ch == '(': depth += 1
+            elif ch == ')':
+                depth -= 1
+                if depth < 0:
+                    balanced = False
+                    break
+        if balanced and depth == 0:
+            return parse_expr(inner)
+
+    # Binary math: find lowest-precedence operator outside parens
+    # Precedence: + - (lowest), then * / %
+    for ops in (['+', '-'], ['*', '/', '%']):
+        depth = 0
+        # Scan right-to-left so left-associativity is preserved
+        for i in range(len(s) - 1, -1, -1):
+            ch = s[i]
+            if ch in ')': depth += 1
+            elif ch in '(': depth -= 1
+            elif depth == 0 and ch in ops:
+                # Make sure it's not a unary minus at start
+                if ch == '-' and i == 0:
+                    continue
+                left  = s[:i].strip()
+                right = s[i+1:].strip()
+                if left and right:
+                    op_map = {'+': '+', '-': '-', '*': '*', '/': '/', '%': '%'}
+                    left_node  = parse_expr(left)
+                    right_node = parse_expr(right)
+                    return {
+                        'type': 'math',
+                        'params': ['', ch, ''],
+                        'children': [left_node, None, right_node]
+                    }
+
+    # millis()
+    if re.match(r'millis\s*\(\s*\)$', s):
+        return {'type': 'millis', 'params': [], 'children': []}
+
+    # Serial.available()
+    if re.match(r'Serial\.available\s*\(\s*\)$', s):
+        return {'type': 'serialavailable', 'params': [], 'children': []}
+
+    # analogRead(pin)
+    m = re.match(r'analogRead\s*\(\s*(\w+)\s*\)$', s)
+    if m:
+        return {'type': 'analogread', 'params': [m.group(1)], 'children': []}
+
+    # digitalRead(pin)
+    m = re.match(r'digitalRead\s*\(\s*(\w+)\s*\)$', s)
+    if m:
+        return {'type': 'digitalread', 'params': [m.group(1)], 'children': []}
+
+    # random(min, max)
+    m = re.match(r'random\s*\(\s*([^,]+?)\s*,\s*([^)]+?)\s*\)$', s)
+    if m:
+        return {'type': 'random', 'params': [m.group(1).strip(), m.group(2).strip()], 'children': []}
+
+    # map(val, inLo, inHi, outLo, outHi)
+    m = re.match(r'map\s*\((.+)\)$', s)
+    if m:
+        args = [a.strip() for a in m.group(1).split(',')]
+        if len(args) == 5:
+            return {
+                'type': 'map',
+                'params': ['', args[1], args[2], args[3], args[4]],
+                'children': [parse_expr(args[0]), None, None, None, None]
+            }
+
+    # constrain(val, lo, hi)
+    m = re.match(r'constrain\s*\((.+)\)$', s)
+    if m:
+        args = [a.strip() for a in m.group(1).split(',')]
+        if len(args) == 3:
+            return {
+                'type': 'constrain',
+                'params': ['', args[1], args[2]],
+                'children': [parse_expr(args[0]), None, None]
+            }
+
+    # Fallback: bare value (number, variable name, or anything else)
+    return {'type': 'value', 'params': [s], 'children': []}
+
+
+def strip_expr_values(node):
+    """Walk an expression node tree and clear all leaf values.
+    Keeps structure (math ops, function types) but empties value nodes
+    and numeric params so the user fills them in.
+    """
+    if node is None:
+        return None
+    t = node['type']
+    # value leaf — clear it
+    if t == 'value':
+        return {'type': 'value', 'params': [''], 'children': []}
+    # millis has no params to clear
+    if t == 'millis':
+        return node
+    # serialavailable has no params to clear
+    if t == 'serialavailable':
+        return node
+    # analogread/digitalread — clear pin
+    if t in ('analogread', 'digitalread'):
+        return {'type': t, 'params': [''], 'children': []}
+    # random — clear min/max
+    if t == 'random':
+        return {'type': 'random', 'params': ['', ''], 'children': []}
+    # math — keep operator, recurse into children
+    if t == 'math':
+        op = node['params'][1] if len(node['params']) > 1 else '+'
+        ch = node.get('children') or [None, None, None]
+        return {
+            'type': 'math',
+            'params': ['', op, ''],
+            'children': [strip_expr_values(ch[0]), None, strip_expr_values(ch[2])]
+        }
+    # map — clear numeric params, recurse into val child
+    if t == 'map':
+        ch = node.get('children') or [None]
+        return {
+            'type': 'map',
+            'params': ['', '', '', '', ''],
+            'children': [strip_expr_values(ch[0]), None, None, None, None]
+        }
+    # constrain — clear lo/hi, recurse into val child
+    if t == 'constrain':
+        ch = node.get('children') or [None]
+        return {
+            'type': 'constrain',
+            'params': ['', '', ''],
+            'children': [strip_expr_values(ch[0]), None, None]
+        }
+    # anything else — return as-is
+    return node
+
+
+def parse_blocks(code, fill_conditions=False, fill_values=False):
+    process = (lambda node: node) if fill_values else strip_expr_values
     blocks = []
     i = 0
     code = code.strip()
@@ -86,8 +240,8 @@ def parse_blocks(code):
             body_str, after_body = extract_brace_body(code, brace_start)
             block = {
                 'type': 'ifblock',
-                'condition': parse_condition(cond_str),
-                'ifbody':   parse_blocks(body_str),
+                'condition': parse_condition(cond_str, fill_conditions),
+                'ifbody':   parse_blocks(body_str, fill_conditions, fill_values),
                 'elseifs':  [],
                 'elsebody': None
             }
@@ -100,58 +254,136 @@ def parse_blocks(code):
                     brace_start = code.index('{', after_paren)
                     ei_body, after_body = extract_brace_body(code, brace_start)
                     block['elseifs'].append({
-                        'condition': parse_condition(ei_cond),
-                        'body': parse_blocks(ei_body)
+                        'condition': parse_condition(ei_cond, fill_conditions),
+                        'body': parse_blocks(ei_body, fill_conditions, fill_values)
                     })
                     i = after_body
                 elif re.match(r'else\s*\{', code[i:]) or (re.match(r'else', code[i:]) and not re.match(r'else\s+if', code[i:])):
                     brace_start = code.index('{', i)
                     else_body, after_body = extract_brace_body(code, brace_start)
-                    block['elsebody'] = parse_blocks(else_body)
+                    block['elsebody'] = parse_blocks(else_body, fill_conditions, fill_values)
                     i = after_body
                     break
                 else:
                     break
             blocks.append(block)
             continue
-        semi = code.find(';', i)
+        if re.match(r'while\s*\(', code[i:]):
+            paren_start = code.index('(', i)
+            cond_str, after_paren = extract_condition(code, paren_start)
+            brace_start = code.index('{', after_paren)
+            body_str, after_body = extract_brace_body(code, brace_start)
+            blocks.append({
+                'type': 'whileloop',
+                'condition': parse_condition(cond_str, fill_conditions),
+                'body': parse_blocks(body_str, fill_conditions, fill_values)
+            })
+            i = after_body
+            continue
+        if re.match(r'for\s*\(', code[i:]):
+            paren_start = code.index('(', i)
+            for_str, after_paren = extract_condition(code, paren_start)
+            brace_start = code.index('{', after_paren)
+            body_str, after_body = extract_brace_body(code, brace_start)
+            parts = for_str.split(';', 2)
+            forinit = parts[0].strip() if len(parts) > 0 else 'int i = 0'
+            forcond = parts[1].strip() if len(parts) > 1 else 'i < 10'
+            forincr = parts[2].strip() if len(parts) > 2 else 'i++'
+            blocks.append({
+                'type': 'forloop',
+                'forinit': forinit,
+                'forcond': forcond,
+                'forincr': forincr,
+                'body': parse_blocks(body_str, fill_conditions, fill_values)
+            })
+            i = after_body
+            continue
+        # Find next semicolon not inside parens or brackets
+        depth = 0
+        semi = -1
+        j = i
+        while j < len(code):
+            c = code[j]
+            if c in '([': depth += 1
+            elif c in ')]': depth -= 1
+            elif c == ';' and depth == 0:
+                semi = j
+                break
+            j += 1
         if semi == -1: break
         line = code[i:semi+1].strip()
         i = semi + 1
-        m = re.match(r'int\s+(\w+)\s*=\s*(-?\d+)\s*;', line)
-        if m: blocks.append({'type':'intvar','params':[m.group(1),m.group(2)]}); continue
-        m = re.match(r'long\s+(\w+)\s*=\s*(-?\d+)\s*;', line)
-        if m: blocks.append({'type':'longvar','params':[m.group(1),m.group(2)]}); continue
-        m = re.match(r'random\s*\(\s*(-?\d+)\s*,\s*(-?\d+)\s*\)\s*;', line)
-        if m: blocks.append({'type':'randomval','params':[m.group(1),m.group(2)]}); continue
+        m = re.match(r'int\s+(\w+)\s*=\s*(.+?)\s*;', line)
+        if m:
+            ex = process(parse_expr(m.group(2)))
+            blocks.append({'type':'intvar','params':[m.group(1),''],'exChildren':[None, ex]})
+            continue
+        m = re.match(r'long\s+(\w+)\s*=\s*(.+?)\s*;', line)
+        if m:
+            ex = process(parse_expr(m.group(2)))
+            blocks.append({'type':'longvar','params':[m.group(1),''],'exChildren':[None, ex]})
+            continue
+        m = re.match(r'unsigned\s+long\s+(\w+)\s*=\s*(.+?)\s*;', line)
+        if m:
+            ex = process(parse_expr(m.group(2)))
+            blocks.append({'type':'longvar','params':[m.group(1),''],'exChildren':[None, ex]})
+            continue
         m = re.match(r'long\s+r\s*=\s*random\s*\(\s*(-?\d+)\s*,\s*(-?\d+)\s*\)\s*;', line)
-        if m: blocks.append({'type':'randomdelay','params':[m.group(1),m.group(2)]}); continue
+        if m: blocks.append({'type':'randomdelay','params':['','']}); continue
+        m = re.match(r'bool\s+(\w+)\s*=\s*(true|false)\s*;', line)
+        if m: blocks.append({'type':'boolvar','params':[m.group(1),m.group(2)]}); continue
+        m = re.match(r'String\s+(\w+)\s*=\s*Serial\.readString\s*\(\s*\)\s*;', line)
+        if m: blocks.append({'type':'serialreadstring','params':[m.group(1)]}); continue
         m = re.match(r'String\s+(\w+)\s*=\s*"([^"]*)"\s*;', line)
-        if m: blocks.append({'type':'stringvar','params':[m.group(1),m.group(2)]}); continue
+        if m: blocks.append({'type':'stringvar','params':[m.group(1),'']}); continue
         m = re.match(r'pinMode\s*\(\s*(\w+)\s*,\s*(\w+)\s*\)\s*;', line)
-        if m: blocks.append({'type':'pinmode','params':[m.group(1),m.group(2)]}); continue
+        if m: blocks.append({'type':'pinmode','params':['',m.group(2)]}); continue
         m = re.match(r'digitalWrite\s*\(\s*(\w+)\s*,\s*(\w+)\s*\)\s*;', line)
-        if m: blocks.append({'type':'digitalwrite','params':[m.group(1),m.group(2)]}); continue
+        if m: blocks.append({'type':'digitalwrite','params':['',m.group(2)]}); continue
         m = re.match(r'analogWrite\s*\(\s*(\w+)\s*,\s*(\w+)\s*\)\s*;', line)
-        if m: blocks.append({'type':'analogwrite','params':[m.group(1),m.group(2)]}); continue
+        if m: blocks.append({'type':'analogwrite','params':['','']}); continue
         m = re.match(r'tone\s*\(\s*(\w+)\s*,\s*(\w+)\s*,\s*(\w+)\s*\)\s*;', line)
-        if m: blocks.append({'type':'tone','params':[m.group(1),m.group(2),m.group(3)]}); continue
+        if m: blocks.append({'type':'tone','params':['','','']}); continue
         m = re.match(r'tone\s*\(\s*(\w+)\s*,\s*(\w+)\s*\)\s*;', line)
-        if m: blocks.append({'type':'tone','params':[m.group(1),m.group(2),'']}); continue
-        m = re.match(r'delay\s*\(\s*(\d+)\s*\)\s*;', line)
-        if m: blocks.append({'type':'delay','params':[m.group(1)]}); continue
-        m = re.match(r'millis\s*\(\s*\)\s*;', line)
-        if m: blocks.append({'type':'millis','params':[]}); continue
+        if m: blocks.append({'type':'tone','params':['','','']}); continue
+        m = re.match(r'noTone\s*\(\s*(.+?)\s*\)\s*;', line)
+        if m:
+            ex = process(parse_expr(m.group(1)))
+            blocks.append({'type':'notone','params':[''],'exChildren':[ex]})
+            continue
+        m = re.match(r'delay\s*\(\s*(.+?)\s*\)\s*;', line)
+        if m:
+            ex = process(parse_expr(m.group(1)))
+            blocks.append({'type':'delay','params':[''],'exChildren':[ex]})
+            continue
         m = re.match(r'Serial\.begin\s*\(\s*(\d+)\s*\)\s*;', line)
         if m: blocks.append({'type':'serialbegin','params':[m.group(1)]}); continue
-        m = re.match(r'Serial\.print(?:ln)?\s*\(\s*"([^"]*)"\s*\)\s*;', line)
-        if m: blocks.append({'type':'serialprint','params':[m.group(1)]}); continue
-        m = re.match(r'(\w+)\s*=\s*analogRead\s*\(\s*(\w+)\s*\)\s*;', line)
-        if m: blocks.append({'type': 'analogread', 'params': [m.group(2), m.group(1)]}); continue
+        m = re.match(r'Serial\.println\s*\(\s*"([^"]*)"\s*\)\s*;', line)
+        if m: blocks.append({'type':'serialprint','params':[m.group(1),'println']}); continue
+        m = re.match(r'Serial\.print\s*\(\s*"([^"]*)"\s*\)\s*;', line)
+        if m: blocks.append({'type':'serialprint','params':[m.group(1),'print']}); continue
+        m = re.match(r'Serial\.println\s*\(\s*(.+?)\s*\)\s*;', line)
+        if m:
+            ex = process(parse_expr(m.group(1)))
+            blocks.append({'type':'serialprintln','params':[''],'exChildren':[ex]})
+            continue
+        m = re.match(r'(\w+)\s*\+\+\s*;', line)
+        if m: blocks.append({'type':'increment','params':[m.group(1),'++','1']}); continue
+        m = re.match(r'(\w+)\s*--\s*;', line)
+        if m: blocks.append({'type':'increment','params':[m.group(1),'--','1']}); continue
+        m = re.match(r'(\w+)\s*\+=\s*(.+?)\s*;', line)
+        if m: blocks.append({'type':'increment','params':[m.group(1),'+=',m.group(2)]}); continue
+        m = re.match(r'(\w+)\s*-=\s*(.+?)\s*;', line)
+        if m: blocks.append({'type':'increment','params':[m.group(1),'-=',m.group(2)]}); continue
+        m = re.match(r'(\w+)\s*=\s*(.+?)\s*;', line)
+        if m and not re.match(r'(int|long|float|bool|byte|char|String|unsigned)\s', line):
+            ex = process(parse_expr(m.group(2)))
+            blocks.append({'type':'setvar','params':[m.group(1),''],'exChildren':[None, ex]})
+            continue
     return blocks
 
 
-def parse_sketch(sketch_code):
+def parse_sketch(sketch_code, fill_conditions=False, fill_values=False):
     result = {'global': [], 'setup': [], 'loop': []}
     setup_start = re.search(r'void\s+setup\s*\(', sketch_code)
     global_code = sketch_code[:setup_start.start()].strip() if setup_start else ''
@@ -159,142 +391,31 @@ def parse_sketch(sketch_code):
     loop_m  = re.search(r'void\s+loop\s*\(\s*\)\s*\{', sketch_code)
     setup_code = extract_brace_body(sketch_code, setup_m.end()-1)[0] if setup_m else ''
     loop_code  = extract_brace_body(sketch_code, loop_m.end()-1)[0]  if loop_m  else ''
-    result['global'] = parse_blocks(global_code)
-    result['setup']  = parse_blocks(setup_code)
-    result['loop']   = parse_blocks(loop_code)
+    result['global'] = parse_blocks(global_code, fill_conditions, fill_values)
+    result['setup']  = parse_blocks(setup_code,  fill_conditions, fill_values)
+    result['loop']   = parse_blocks(loop_code,   fill_conditions, fill_values)
     return result
 
 
-# ── Preset sketches ───────────────────────────────────────────────────
+def collect_types(blocks):
+    """Walk a block tree and return the set of all block types used."""
+    types = set()
+    for b in blocks:
+        types.add(b['type'])
+        if b['type'] == 'ifblock':
+            types.update(collect_types(b.get('ifbody', [])))
+            for ei in b.get('elseifs', []):
+                types.update(collect_types(ei.get('body', [])))
+            if b.get('elsebody'):
+                types.update(collect_types(b['elsebody']))
+        elif b['type'] in ('forloop', 'whileloop'):
+            types.update(collect_types(b.get('body', [])))
+    return types
 
-PRESETS = {
-    'engine_start': """
-void setup() {
-  pinMode(9, INPUT);   // Arm switch
-  pinMode(7, INPUT);   // Engage button
-  pinMode(2, OUTPUT);  // Engine light
-  pinMode(5, OUTPUT); // Engine buzzer
-}
-
-void loop() {
-
-  if (digitalRead(9) == LOW) {   // Switch ON
-
-    digitalWrite(2, HIGH);        // Light ON (armed)
-
-    if (digitalRead(7) == LOW) {
-      digitalWrite(5, HIGH);     // Start engine
-    }
-
-  } else {                        // Switch OFF
-
-    digitalWrite(2, LOW);         // Light OFF
-    digitalWrite(2, LOW);        // Engine OFF (reset)
-
-  }
-}
-""",
-    'patrol_alarm': """
-int switchPin = 12;
-
-int redLED = 8;
-int blueLED = 6;
-int clearLED = 4;
-
-void setup()
-{
-  pinMode(switchPin, INPUT_PULLUP);
-
-  pinMode(redLED, OUTPUT);
-  pinMode(blueLED, OUTPUT);
-  pinMode(clearLED, OUTPUT);
-}
-
-void loop()
-{
-
-  // Check if the switch is ON
-  if (digitalRead(switchPin) == LOW)
-  {
-
-    // Red flash
-    //## digitalWrite(redLED, HIGH);
-    delay(150);
-    //## digitalWrite(redLED, LOW);
-
-    // Blue flash
-    //## digitalWrite(blueLED, HIGH);
-    delay(150);
-    digitalWrite(blueLED, LOW);
-
-    // Clear flash
-    digitalWrite(clearLED, HIGH);
-    //##delay(150);
-    digitalWrite(clearLED, LOW);
-
-  }
-
-  else
-  {
-
-    // Switch OFF → everything OFF
-    //## digitalWrite(redLED, LOW);
-    digitalWrite(blueLED, LOW);
-    digitalWrite(clearLED, LOW);
-
-  }
-
-}
-""",
-    'timer_game': """
-int button = 2;
-
-int running = 0;
-
-unsigned long startTime = 0;
-unsigned long time = 0;
-
-void setup() {
-  pinMode(button, INPUT_PULLUP);
-  Serial.begin(9600);
-}
-
-void loop() {
-
-  if (digitalRead(button) == LOW) {
-
-    if (running == 0) {
-      startTime = millis();
-      running = 1;
-    }
-    else {
-      time = millis() - startTime;
-      Serial.println(time);
-      running = 0;
-    }
-
-    delay(300);
-  }
-
-}
-""",
-}
-
-
-# ── Pin reference lists ───────────────────────────────────────────────
-# Add your own project keys and component lists here.
-# These appear as a reference-only dropdown on every pinMode block.
-# The user can pick an item as a label hint or ignore it entirely.
-
-PIN_REFS = {
-    "engine_start": ["Switch", "Button", "LED", "Buzzer"],
-    "serial_hello": ["TX LED", "RX LED"],
-    "button_read":  ["button", "LED"],
-}
 
 # ── Component ─────────────────────────────────────────────────────────
 
-def arduino_block_coder(height=550, preset=None, drawer_content=None, pin_refs=None, username=None, page=None):
+def arduino_block_coder(height=550, preset=None, drawer_content=None, pin_refs=None, username=None, page=None, fill_conditions=None, fill_values=None):
 
     # Guard: if a string is passed positionally treat it as preset
     if isinstance(height, str):
@@ -303,17 +424,53 @@ def arduino_block_coder(height=550, preset=None, drawer_content=None, pin_refs=N
 
     # Build initial block state from preset if provided
     if preset and preset in PRESETS:
-        blocks = parse_sketch(PRESETS[preset])
+        p = PRESETS[preset]
+        sketch_code = p['sketch'] if isinstance(p, dict) else p
+        fc = fill_conditions if fill_conditions is not None else (p.get('fill_conditions', False) if isinstance(p, dict) else False)
+        fv = fill_values     if fill_values     is not None else (p.get('fill_values',     False) if isinstance(p, dict) else False)
+        blocks = parse_sketch(sketch_code, fill_conditions=fc, fill_values=fv)
+
+        # Build palette allowed set: always auto from sketch, then apply amendments
+        base_types = collect_types(
+            blocks['global'] + blocks['setup'] + blocks['loop']
+        )
+        if isinstance(p, dict):
+            palette_add    = set(p.get('palette_add',    []))
+            palette_remove = set(p.get('palette_remove', []))
+        else:
+            palette_add, palette_remove = set(), set()
+        allowed = (base_types | palette_add) - palette_remove
+        palette_js = 'var PALETTE_ALLOWED=' + str(list(allowed)).replace("'", '"') + ';'
         def cond_to_js(c):
             return ("{"
-                    "left:'" + c['left']   + "',"
-                    "op:'"   + c['op']     + "',"
-                    "right:'"  + c['right']  + "',"
-                    "joiner:'" + c['joiner'] + "',"
-                    "left2:'"  + c['left2']  + "',"
-                    "op2:'"    + c['op2']    + "',"
-                    "right2:'" + c['right2'] + "'"
-                    "}")
+                    "leftExpr:"   + ex_node_to_js(c.get('leftExpr'))   + ","
+                    "op:'"        + c.get('op','==')                   + "',"
+                    "rightExpr:"  + ex_node_to_js(c.get('rightExpr'))  + ","
+                    "joiner:'"    + c.get('joiner','none')              + "',"
+                    "leftExpr2:"  + ex_node_to_js(c.get('leftExpr2'))  + ","
+                    "op2:'"       + c.get('op2','==')                  + "',"
+                    "rightExpr2:" + ex_node_to_js(c.get('rightExpr2')) + "}")
+        def ex_node_to_js(node):
+            if node is None:
+                return 'null'
+            children_js = '[' + ','.join(ex_node_to_js(c) for c in (node.get('children') or [])) + ']'
+            params_js = json_list(node.get('params') or [])
+            return ("{type:'" + node['type'] + "',"
+                    "params:" + params_js + ","
+                    "children:" + children_js + "}")
+
+        def json_list(lst):
+            items = []
+            for v in lst:
+                if v is None:
+                    items.append('null')
+                elif isinstance(v, str):
+                    escaped = v.replace('\\', '\\\\').replace("'", "\\'")
+                    items.append("'" + escaped + "'")
+                else:
+                    items.append(str(v))
+            return '[' + ','.join(items) + ']'
+
         def block_to_js(b):
             if b['type'] == 'ifblock':
                 ifbody_js  = '[' + ','.join(block_to_js(x) for x in b['ifbody']) + ']'
@@ -329,17 +486,37 @@ def arduino_block_coder(height=550, preset=None, drawer_content=None, pin_refs=N
                         'ifbody:' + ifbody_js + ','
                         'elseifs:' + elseifs_js + ','
                         'elsebody:' + else_js + '}')
+            if b['type'] == 'forloop':
+                body_js = '[' + ','.join(block_to_js(x) for x in b.get('body', [])) + ']'
+                fi = b.get('forinit','int i = 0').replace("'","\\'")
+                fc = b.get('forcond','i < 10').replace("'","\\'")
+                fr = b.get('forincr','i++').replace("'","\\'")
+                return ("{id:Date.now()+Math.random(),type:'forloop',"
+                        "forinit:'" + fi + "',forcond:'" + fc + "',forincr:'" + fr + "',"
+                        "body:" + body_js + "}")
+            if b['type'] == 'whileloop':
+                body_js = '[' + ','.join(block_to_js(x) for x in b.get('body', [])) + ']'
+                cond = b.get('condition') or {'leftExpr': None, 'op': '!=', 'rightExpr': None, 'joiner': 'none', 'leftExpr2': None, 'op2': '==', 'rightExpr2': None}
+                return ("{id:Date.now()+Math.random(),type:'whileloop',"
+                        "condition:" + cond_to_js(cond) + ","
+                        "body:" + body_js + "}")
             if b['type'] == 'codeblock':
                 escaped = b['params'][0].replace('\\', '\\\\').replace("'", "\\'")
                 return "{id:Date.now()+Math.random(),type:'codeblock',params:['" + escaped + "']}"
-            blank = str(['' for _ in b['params']])
-            return "{id:Date.now()+Math.random(),type:'" + b['type'] + "',params:" + blank + "}"
+            # General case — serialise params and exChildren
+            params_js = json_list(b.get('params', []))
+            ex = b.get('exChildren') or []
+            ex_js = '[' + ','.join(ex_node_to_js(n) for n in ex) + ']'
+            return ("{id:Date.now()+Math.random(),type:'" + b['type'] + "',"
+                    "params:" + params_js + ","
+                    "exChildren:" + ex_js + "}")
         gb = '[' + ','.join(block_to_js(b) for b in blocks['global']) + ']'
         sb = '[' + ','.join(block_to_js(b) for b in blocks['setup'])  + ']'
         lb = '[' + ','.join(block_to_js(b) for b in blocks['loop'])   + ']'
         initial_js = "SECTIONS.global=" + gb + ";SECTIONS.setup=" + sb + ";SECTIONS.loop=" + lb + ";"
     else:
         initial_js = ""
+        palette_js = 'var PALETTE_ALLOWED=null;'
     css = (
         "* { box-sizing:border-box; margin:0; padding:0; }"
         "html, body { width:100%; height:" + str(height) + "px; overflow:hidden;"
@@ -391,6 +568,22 @@ def arduino_block_coder(height=550, preset=None, drawer_content=None, pin_refs=N
         ".if-header    { border-radius:5px 5px 0 0; }"
         ".elseif-header { border-top:none; }"
         ".else-header   { border-top:none; }"
+        ".for-header { display:flex; align-items:center; gap:4px; flex-wrap:wrap;"
+        "  background:#e8f5e9; border:1px solid #2e7d32; border-radius:5px 5px 0 0; padding:3px 6px; }"
+        ".while-header { display:flex; align-items:center; gap:4px; flex-wrap:wrap;"
+        "  background:#ede7f6; border:1px solid #6a1b9a; border-radius:5px 5px 0 0; padding:3px 6px; }"
+        ".for-block, .while-block { margin-bottom:3px; }"
+        ".for-body { border-left:1px dashed #2e7d32; border-right:1px dashed #2e7d32;"
+        "  border-bottom:1px dashed #2e7d32; border-radius:0 0 5px 5px;"
+        "  padding:4px 4px 4px 60px; min-height:28px; cursor:pointer; }"
+        ".while-body { border-left:1px dashed #6a1b9a; border-right:1px dashed #6a1b9a;"
+        "  border-bottom:1px dashed #6a1b9a; border-radius:0 0 5px 5px;"
+        "  padding:4px 4px 4px 60px; min-height:28px; cursor:pointer; }"
+        ".for-body:hover { border-color:#1b5e20; }"
+        ".while-body:hover { border-color:#4a148c; }"
+        ".for-body.selected, .while-body.selected { border-color:#0969da; border-style:solid; background:#ddf4ff; }"
+        ".for-keyword { font-size:14px; font-weight:bold; color:#2e7d32; }"
+        ".while-keyword { font-size:14px; font-weight:bold; color:#6a1b9a; }"
         ".if-keyword { font-size:14px; font-weight:bold; color:#cf222e; }"
         ".cond-field { display:flex; flex-direction:column; font-size:8px; }"
         ".cond-field label { color:#57606a; margin-bottom:1px; }"
@@ -474,7 +667,52 @@ def arduino_block_coder(height=550, preset=None, drawer_content=None, pin_refs=N
         ".section-body { flex:1; overflow-y:auto; padding:5px 7px; min-height:0; }"
         ".section-body::-webkit-scrollbar { width:3px; }"
         ".section-body::-webkit-scrollbar-thumb { background:#d0d7de; }"
-        # ================
+        # Expression slot styles
+        ".expr-slot { display:inline-flex; align-items:center; gap:2px; min-width:60px;"
+        "  background:#fff; border:2px dashed #c0c0c0; border-radius:8px;"
+        "  padding:2px 6px; cursor:pointer; font-size:11px; color:#888;"
+        "  transition:border-color 0.15s, background 0.15s; vertical-align:middle; position:relative; }"
+        ".expr-slot:hover { border-color:#0969da; color:#0969da; background:#ddf4ff; }"
+        ".expr-slot.active { border-color:#0969da; border-style:solid; background:#ddf4ff; }"
+        ".expr-slot.has-expr { border-style:solid; padding:2px 4px; background:#f0f6ff; }"
+        ".expr-chip { display:inline-flex; align-items:center; gap:3px; border-radius:6px;"
+        "  padding:2px 6px; font-size:11px; font-weight:700; color:#fff; }"
+        ".expr-chip .expr-remove { font-size:9px; cursor:pointer; opacity:0.7; margin-left:2px; }"
+        ".expr-chip .expr-remove:hover { opacity:1; }"
+        ".expr-block-inline { display:inline-flex; align-items:center; flex-wrap:wrap; gap:3px;"
+        "  border-radius:8px; padding:2px 6px; font-size:11px; font-weight:700; }"
+        ".expr-input { font-size:12px; padding:2px 5px; width:55px; background:#fff;"
+        "  border:1px solid #d0d7de; border-radius:6px; font-family:inherit; }"
+        ".expr-input:focus { outline:none; border-color:#0969da; }"
+        ".expr-sel { font-size:11px; padding:2px 4px; background:#fff;"
+        "  border:1px solid #d0d7de; border-radius:6px; font-family:inherit; }"
+        ".vartext-wrap { position:relative; display:inline-block; }"
+        ".vartext-input { font-size:12px; padding:2px 5px; width:72px; background:#fff;"
+        "  border:1px solid #d0d7de; border-radius:6px; font-family:inherit; }"
+        ".vartext-input:focus { outline:none; border-color:#0969da; }"
+        ".vartext-drop { position:absolute; top:100%; left:0; z-index:999;"
+        "  background:#fff; border:1px solid #d0d7de; border-radius:6px;"
+        "  box-shadow:0 4px 12px rgba(0,0,0,0.15); min-width:100px; max-height:140px;"
+        "  overflow-y:auto; margin-top:2px; }"
+        ".vartext-drop-item { padding:4px 8px; font-size:12px; cursor:pointer;"
+        "  white-space:nowrap; color:#1f2328; }"
+        ".vartext-drop-item:hover { background:#ddf4ff; color:#0969da; }"
+        ".vartext-drop-empty { padding:4px 8px; font-size:11px; color:#57606a; font-style:italic; }"
+        ".pal-title-expr { font-size:9px; color:#9a6700; text-transform:uppercase;"
+        "  letter-spacing:.06em; padding:6px 0 4px 0; border-bottom:1px solid #d0d7de;"
+        "  margin-top:6px; margin-bottom:2px; }"
+        ".block-btn.expr-btn { background:#fff8c5; color:#9a6700; border:1px solid #d4a72c; }"
+        ".block-btn.expr-btn:hover { background:#fffbea; border-color:#9a6700; color:#7a5200; }"
+        ".expr-slot-label { font-size:8px; color:#57606a; display:block; margin-bottom:1px; }"
+        "#pal-context { font-size:9px; font-weight:700; text-transform:uppercase;"
+        "  letter-spacing:.06em; padding:4px 2px 6px 2px; color:#57606a;"
+        "  border-bottom:1px solid #d0d7de; margin-bottom:4px; min-height:28px;"
+        "  display:flex; align-items:center; line-height:1.3; }"
+        "#pal-context.has-sel { color:#0969da; }"
+        "#pal-context.has-expr { color:#9a6700; }"
+        ".block-btn.hidden { display:none; }"
+        "#pal-blocks-section { display:flex; flex-direction:column; gap:4px; }"
+        "#pal-expr-section { display:flex; flex-direction:column; gap:4px; }"
     )
 
     # ── Build drawer inner HTML ───────────────────────────────────────────
@@ -531,22 +769,40 @@ def arduino_block_coder(height=550, preset=None, drawer_content=None, pin_refs=N
         "<div style='padding-bottom:400px;'>"
         "<div id='app'>"
         "<div id='palette'>"
-        "<div class='pal-title'>Blocks</div>"
+        "<div id='pal-context'>select a section</div>"
+        "<div id='pal-blocks-section'>"
         "<button class='block-btn' data-type='intvar'>int var</button>"
         "<button class='block-btn' data-type='longvar'>long var</button>"
+        "<button class='block-btn' data-type='boolvar'>bool var</button>"
+        "<button class='block-btn' data-type='setvar'>set var</button>"
+        "<button class='block-btn' data-type='increment'>++ / --</button>"
         "<button class='block-btn' data-type='stringvar'>String var</button>"
         "<button class='block-btn' data-type='pinmode'>pinMode</button>"
         "<button class='block-btn' data-type='digitalwrite'>digitalWrite</button>"
         "<button class='block-btn' data-type='analogwrite'>analogWrite</button>"
         "<button class='block-btn' data-type='tone'>tone</button>"
+        "<button class='block-btn' data-type='notone'>noTone</button>"
         "<button class='block-btn' data-type='delay'>delay</button>"
-        "<button class='block-btn' data-type='millis'>millis()</button>"
-        "<button class='block-btn' data-type='randomdelay'>random delay</button>"
-        "<button class='block-btn' data-type='randomval'>random</button>"
         "<button class='block-btn' data-type='serialbegin'>Serial.begin</button>"
         "<button class='block-btn' data-type='serialprint'>Serial.print</button>"
-        "<button class='block-btn' data-type='ifblock'>if statement</button>"
-        "<button class='block-btn' data-type='analogread'>analogRead</button>"
+        "<button class='block-btn' data-type='serialprintln'>Serial.println</button>"
+        "<button class='block-btn' data-type='serialreadstring'>Serial.readString</button>"
+        "<button class='block-btn' data-type='ifblock'>if</button>"
+        "<button class='block-btn' data-type='forloop'>for loop</button>"
+        "<button class='block-btn' data-type='whileloop'>while loop</button>"
+        "</div>"
+        "<div id='pal-expr-section'>"
+        "<div class='pal-title-expr' id='pal-expr-title'>Expressions</div>"
+        "<button class='block-btn expr-btn' data-type='value'>value</button>"
+        "<button class='block-btn expr-btn' data-type='millis'>millis()</button>"
+        "<button class='block-btn expr-btn' data-type='analogread'>analogRead</button>"
+        "<button class='block-btn expr-btn' data-type='digitalread'>digitalRead</button>"
+        "<button class='block-btn expr-btn' data-type='random'>random()</button>"
+        "<button class='block-btn expr-btn' data-type='math'>math</button>"
+        "<button class='block-btn expr-btn' data-type='map'>map()</button>"
+        "<button class='block-btn expr-btn' data-type='constrain'>constrain</button>"
+        "<button class='block-btn expr-btn' data-type='serialavailable'>Serial.available</button>"
+        "</div>"
         "</div>"
         "<div id='workspace'>"
         "<div class='section s-global' id='gs'>"
@@ -606,42 +862,250 @@ def arduino_block_coder(height=550, preset=None, drawer_content=None, pin_refs=N
         "var UNO_ANALOG_PINS=['A0','A1','A2','A3','A4','A5'];"
         "var UNO_DIGITAL_IO_PINS=UNO_DIGITAL_PINS.concat(UNO_ANALOG_PINS);"
         "var UNO_PWM_PINS=['3','5','6','9','10','11'];"
-        "var B={"
-        "intvar:{allowed:['global'],inputs:[{t:'text',l:'Name'},{t:'number',l:'Value'}],"
-        "  gen:function(p){return 'int '+(p[0]||'myVar')+' = '+(p[1]||0)+';';}},"
-        "stringvar:{allowed:['global'],inputs:[{t:'text',l:'Name'},{t:'text',l:'Value'}],"
-        "  gen:function(p){var v=String(p[1]||'').replace(/\\\\/g,'\\\\\\\\').replace(/\"/g,'\\\\\"');"
+        "var BLOCKS={"
+        "intvar:{allowed:['global','loop','if','for','while'],asStatement:true,asExpr:false,"
+        "  inputs:[{t:'text',l:'Name'},{t:'expr',l:'Value',fallback:'0'}],"
+        "  defaults:[null,{type:'value',params:['0'],children:[]}],"
+        "  genStmt:function(p,ex){return 'int '+(p[0]||'myVar')+' = '+genExpr(ex&&ex[1],p[1],'0')+';';}},"
+        "longvar:{allowed:['global','loop','if','for','while'],asStatement:true,asExpr:false,"
+        "  inputs:[{t:'text',l:'Name'},{t:'expr',l:'Value',fallback:'0'}],"
+        "  defaults:[null,{type:'value',params:['0'],children:[]}],"
+        "  genStmt:function(p,ex){return 'long '+(p[0]||'myLong')+' = '+genExpr(ex&&ex[1],p[1],'0')+';';}},"
+        "boolvar:{allowed:['global','loop','if','for','while'],asStatement:true,asExpr:false,"
+        "  inputs:[{t:'text',l:'Name'},{t:'sel',l:'Value',o:['true','false']}],"
+        "  genStmt:function(p){return 'bool '+(p[0]||'myFlag')+' = '+(p[1]||'false')+';';}},"
+        "setvar:{allowed:['loop','if','for','while'],asStatement:true,asExpr:false,"
+        "  inputs:[{t:'vartext',l:'Var'},{t:'expr',l:'Value',fallback:'0'}],"
+        "  defaults:[null,{type:'value',params:['0'],children:[]}],"
+        "  genStmt:function(p,ex){return (p[0]||'myVar')+' = '+genExpr(ex&&ex[1],p[1],'0')+';';}},"
+        "increment:{allowed:['loop','if','for','while'],asStatement:true,asExpr:false,"
+        "  inputs:[{t:'vartext',l:'Var'},{t:'sel',l:'Op',o:['++','--','+=','-=']},"
+        "          {t:'number',l:'By'}],"
+        "  genStmt:function(p){"
+        "    var v=p[0]||'myVar',op=p[1]||'++',n=p[2]||'1';"
+        "    if(op==='++'||op==='--')return v+op+';';"
+        "    return v+' '+op+' '+n+';';}},"
+        "stringvar:{allowed:['global'],asStatement:true,asExpr:false,"
+        "  inputs:[{t:'text',l:'Name'},{t:'text',l:'Value'}],"
+        "  genStmt:function(p){var v=String(p[1]||'').replace(/\\\\/g,'\\\\\\\\').replace(/\"/g,'\\\\\"');"
         "    return 'String '+(p[0]||'myText')+' = \"'+v+'\";';}},"
-        "pinmode:{allowed:['setup'],inputs:[{t:'sel',l:'Pin',o:'DIGITAL_PIN_OPTIONS'},{t:'sel',l:'Mode',o:['OUTPUT','INPUT_PULLUP']}],"
-        "  gen:function(p){return 'pinMode('+(p[0])+', '+(p[1])+');';}},"
-        "digitalwrite:{allowed:['loop','if'],inputs:[{t:'sel',l:'Pin',o:'DIGITAL_PIN_OPTIONS'},{t:'sel',l:'Value',o:['HIGH','LOW']}],"
-        "  gen:function(p){return 'digitalWrite('+(p[0])+', '+(p[1])+');';}},"
-        "analogwrite:{allowed:['loop','if'],inputs:[{t:'sel',l:'Pin',o:'PWM_PIN_OPTIONS'},{t:'number',l:'Value (0-255)'}],"
-        "  gen:function(p){return 'analogWrite('+(p[0]||9)+', '+(p[1]||128)+');';}},"
-        "tone:{allowed:['loop','if'],inputs:[{t:'sel',l:'Pin',o:'DIGITAL_PIN_OPTIONS'},{t:'number',l:'Freq (Hz)'},{t:'number',l:'Duration (ms)'}],"
-        "  gen:function(p){var pin=(p[0]||5),f=(p[1]||440),d=p[2];"
+        "pinmode:{allowed:['setup'],asStatement:true,asExpr:false,"
+        "  inputs:[{t:'vartext',l:'Pin',o:'DIGITAL_PIN_OPTIONS'},{t:'sel',l:'Mode',o:['OUTPUT','INPUT','INPUT_PULLUP']}],"
+        "  genStmt:function(p){return 'pinMode('+(p[0])+', '+(p[1])+');';}},"
+        "digitalwrite:{allowed:['loop','if','for','while'],asStatement:true,asExpr:false,"
+        "  inputs:[{t:'sel',l:'Pin',o:'DIGITAL_PIN_OPTIONS'},{t:'sel',l:'Value',o:['HIGH','LOW']}],"
+        "  genStmt:function(p){return 'digitalWrite('+(p[0])+', '+(p[1])+');';}},"
+        "analogwrite:{allowed:['loop','if','for','while'],asStatement:true,asExpr:false,"
+        "  inputs:[{t:'sel',l:'Pin',o:'PWM_PIN_OPTIONS'},{t:'expr',l:'Value',fallback:'128'}],"
+        "  genStmt:function(p,ex){return 'analogWrite('+(p[0]||9)+', '+genExpr(ex&&ex[1],p[1],'128')+');';}},"
+        "analogread:{allowed:['loop','if','for','while'],asStatement:false,asExpr:true,"
+        "  inputs:[{t:'sel',l:'Pin',o:'ANALOG_PIN_OPTIONS'}],"
+        "  genExpr:function(p){return 'analogRead('+(p[0]||'A0')+')';}},"
+        "digitalread:{allowed:['loop','if','for','while'],asStatement:false,asExpr:true,"
+        "  inputs:[{t:'sel',l:'Pin',o:'DIGITAL_PIN_OPTIONS'}],"
+        "  genExpr:function(p){return 'digitalRead('+(p[0]||'2')+')';}},"
+        "delay:{allowed:['loop','if','for','while'],asStatement:true,asExpr:false,"
+        "  inputs:[{t:'expr',l:'ms',fallback:'1000'}],"
+        "  genStmt:function(p,ex){return 'delay('+genExpr(ex&&ex[0],p[0],'1000')+');';}},"
+        "millis:{allowed:['loop','if','for','while'],asStatement:false,asExpr:true,"
+        "  inputs:[],"
+        "  genExpr:function(p){return 'millis()';}},"
+        "tone:{allowed:['loop','if','for','while'],asStatement:true,asExpr:false,"
+        "  inputs:[{t:'sel',l:'Pin',o:'DIGITAL_PIN_OPTIONS'},{t:'expr',l:'Freq',fallback:'440'},{t:'number',l:'Duration'}],"
+        "  genStmt:function(p,ex){var pin=(p[0]||5),f=genExpr(ex&&ex[1],p[1],'440'),d=p[2];"
         "    return (d!==''&&d!==null&&d!==undefined)?('tone('+pin+', '+f+', '+d+');'):('tone('+pin+', '+f+');');}},"
-        "delay:{allowed:['loop','if'],inputs:[{t:'number',l:'ms'}],"
-        "  gen:function(p){return 'delay('+(p[0]||1000)+');';}},"
-        "millis:{allowed:['loop','if'],inputs:[],"
-        "  gen:function(p){return 'millis();';}},"
-        "randomdelay:{allowed:['loop','if'],inputs:[{t:'number',l:'Min'},{t:'number',l:'Max'}],"
-        "  gen:function(p){return 'long r = random('+(p[0]||2000)+', '+(p[1]||5000)+');\\ndelay(r);';}},"
-        "serialbegin:{allowed:['setup'],inputs:[{t:'sel',l:'Baud',o:['9600','19200','38400','57600','115200']}],"
-        "  gen:function(p){return 'Serial.begin('+(p[0]||'9600')+');';}},"
-        "serialprint:{allowed:['setup','loop','if'],inputs:[{t:'text',l:'Message'}],"
-        "  gen:function(p){return 'Serial.print(\"'+(p[0]||'Hello')+'\");';}},"
-        "analogread: {allowed: ['loop','if'],inputs: [{ t:'sel', l:'Pin', o:'ANALOG_PIN_OPTIONS' },{ t:'text', l:'Into var' }],"
-        "  gen: function(p) {return (p[1]||'val') + ' = analogRead(' + (p[0]||'A0') + ');';}},"
-        "longvar:{allowed:['global'],inputs:[{t:'text',l:'Name'},{t:'number',l:'Value'}],"
-        "  gen:function(p){return 'long '+(p[0]||'myLong')+' = '+(p[1]||0)+';';}},"
-        "randomval:{allowed:['loop','if'],inputs:[{t:'number',l:'Min'},{t:'number',l:'Max'}],"
-        "  gen:function(p){return 'random('+(p[0]||0)+', '+(p[1]||1000)+');';}},"
-        "codeblock:{allowed:['global','setup','loop','if'],inputs:[{t:'text',l:'Code'}],"
-        "  gen:function(p){return (p[0]||'');}},"
-        "ifblock:{allowed:['loop','if'],inputs:[],gen:function(){return '';}},"
+        "notone:{allowed:['loop','if','for','while'],asStatement:true,asExpr:false,"
+        "  inputs:[{t:'expr',l:'Pin',fallback:'0'}],"
+        "  genStmt:function(p,ex){return 'noTone('+genExpr(ex&&ex[0],p[0],'0')+');';}},"
+        "random:{allowed:['loop','if','for','while'],asStatement:false,asExpr:true,"
+        "  inputs:[{t:'number',l:'Min'},{t:'number',l:'Max'}],"
+        "  genExpr:function(p){return 'random('+(p[0]||0)+', '+(p[1]||100)+')';}},"
+        "math:{allowed:[],asStatement:false,asExpr:true,"
+        "  inputs:[{t:'expr',l:'A',fallback:'0'},{t:'sel',l:'Op',o:[{v:'+',lb:'plus'},{v:'-',lb:'minus'},{v:'*',lb:'multiply'},{v:'/',lb:'divide'},{v:'%',lb:'modulo'}]},{t:'expr',l:'B',fallback:'0'}],"
+        "  genExpr:function(p,ch){"
+        "    var a=genExpr(ch&&ch[0],p[0],'0'),op=p[1]||'+',b=genExpr(ch&&ch[2],p[2],'0');"
+        "    return '('+a+' '+op+' '+b+')';}},"
+        "map:{allowed:[],asStatement:false,asExpr:true,"
+        "  inputs:[{t:'expr',l:'Val',fallback:'0'},{t:'number',l:'inLo'},{t:'number',l:'inHi'},{t:'number',l:'outLo'},{t:'number',l:'outHi'}],"
+        "  genExpr:function(p,ch){"
+        "    var v=genExpr(ch&&ch[0],p[0],'0');"
+        "    return 'map('+v+', '+(p[1]||0)+', '+(p[2]||1023)+', '+(p[3]||0)+', '+(p[4]||255)+')';}},"
+        "constrain:{allowed:[],asStatement:false,asExpr:true,"
+        "  inputs:[{t:'expr',l:'Val',fallback:'0'},{t:'number',l:'Lo'},{t:'number',l:'Hi'}],"
+        "  genExpr:function(p,ch){"
+        "    var v=genExpr(ch&&ch[0],p[0],'0');"
+        "    return 'constrain('+v+', '+(p[1]||0)+', '+(p[2]||255)+')';}},"
+        "value:{allowed:[],asStatement:false,asExpr:true,"
+        "  inputs:[{t:'vartext',l:'Value'}],"
+        "  genExpr:function(p){return (p[0]||'0');}},"
+        "serialbegin:{allowed:['setup'],asStatement:true,asExpr:false,"
+        "  inputs:[{t:'sel',l:'Baud',o:['9600','19200','38400','57600','115200']}],"
+        "  genStmt:function(p){return 'Serial.begin('+(p[0]||'9600')+');';}},"
+        "serialprint:{allowed:['setup','loop','if','for','while'],asStatement:true,asExpr:false,"
+        "  inputs:[{t:'text',l:'Message'},{t:'sel',l:'',o:['println','print']}],"
+        "  genStmt:function(p){var fn=p[1]==='print'?'Serial.print':'Serial.println';"
+        "    return fn+'(\"'+(p[0]||'Hello')+'\");';}},"
+        "serialprintln:{allowed:['setup','loop','if','for','while'],asStatement:true,asExpr:false,"
+        "  inputs:[{t:'expr',l:'Value',fallback:'0'}],"
+        "  genStmt:function(p,ex){return 'Serial.println('+genExpr(ex&&ex[0],p[0],'0')+');';}},"
+        "serialreadstring:{allowed:['loop','if','for','while'],asStatement:true,asExpr:false,"
+        "  inputs:[{t:'vartext',l:'Into'}],"
+        "  genStmt:function(p){return 'String '+(p[0]||'input')+' = Serial.readString();';}},"
+        "serialavailable:{allowed:[],asStatement:false,asExpr:true,"
+        "  inputs:[],"
+        "  genExpr:function(p){return 'Serial.available()';}},"
+        "codeblock:{allowed:['global','setup','loop','if','for','while'],asStatement:true,asExpr:false,"
+        "  inputs:[{t:'text',l:'Code'}],"
+        "  genStmt:function(p){return (p[0]||'');}},"
+        "ifblock:{allowed:['loop','if','for','while'],asStatement:true,asExpr:false,"
+        "  inputs:[],genStmt:function(){return '';}},"
+        "forloop:{allowed:['loop','if','for','while'],asStatement:true,asExpr:false,"
+        "  inputs:[],genStmt:function(){return '';}},"
+        "whileloop:{allowed:['loop','if','for','while'],asStatement:true,asExpr:false,"
+        "  inputs:[],genStmt:function(){return '';}},"
         "};"
+        "var B=BLOCKS;"
         "var SECTIONS={global:[],setup:[],loop:[]};"
+        "var exprSel=null;"
+        "var EXPR_COLORS={'analogread':'#1a7f37','digitalread':'#1a7f37','millis':'#0969da',"
+        "  'random':'#e36209','math':'#9a6700','map':'#6f42c1','constrain':'#cf222e','value':'#57606a'};"
+        "function getExprColor(type){return EXPR_COLORS[type]||'#57606a';}"
+        "function genExpr(exNode,fallbackParam,fallbackDefault){"
+        "  if(exNode&&exNode.type){"
+        "    var def=BLOCKS[exNode.type];"
+        "    if(!def||!def.genExpr)return String(fallbackParam||fallbackDefault||'0');"
+        "    return def.genExpr(exNode.params||[],exNode.children||[]);}"
+        "  var v=fallbackParam;if(v===''||v===null||v===undefined)v=fallbackDefault||'0';"
+        "  return String(v);}"
+        "function makeExNode(type){"
+        "  var def=BLOCKS[type];if(!def||!def.asExpr)return null;"
+        "  var params=def.inputs.map(function(inp){"
+        "    if(inp.t==='sel'){var f=inp.o[0];return typeof f==='object'?f.v:f;}"
+        "    if(inp.t==='number')return '0'; if(inp.t==='expr')return '';"
+        "    if(inp.t==='vartext')return '0'; return '';});"
+        "  var children=def.inputs.map(function(inp){return inp.t==='expr'?null:undefined;});"
+        "  return {type:type,params:params,children:children};}"
+        "function renderExprSlot(block,slotIdx,label){"
+        "  if(!block.exChildren)block.exChildren=[];"
+        "  var exNode=block.exChildren[slotIdx]||null;"
+        "  var wrap=document.createElement('div');wrap.className='blk-field';"
+        "  var lbl=document.createElement('label');lbl.textContent=label;wrap.appendChild(lbl);"
+        "  var slot=document.createElement('div');"
+        "  slot.className='expr-slot'+(exNode?' has-expr':'');"
+        "  var isActive=exprSel&&exprSel.block===block&&exprSel.slotIdx===slotIdx;"
+        "  if(isActive)slot.classList.add('active');"
+        "  if(exNode){"
+        "    slot.appendChild(renderExprBlock(exNode,function(){block.exChildren[slotIdx]=null;exprSel=null;updatePalette();render();}));"
+        "  }else{"
+        "    var ph=document.createElement('span');ph.textContent=isActive?'> drop expr':'+ expr';slot.appendChild(ph);"
+        "  }"
+        "  slot.addEventListener('click',function(e){"
+        "    e.stopPropagation();"
+        "    if(exprSel&&exprSel.block===block&&exprSel.slotIdx===slotIdx){exprSel=null;updatePalette();render();return;}"
+        "    exprSel={block:block,slotIdx:slotIdx};sel=null;"
+        "    document.getElementById('statusbar').innerHTML='<span style=\"color:#9a6700\">click an expression block to snap it in</span>';"
+        "    updatePalette();"
+        "    render();});"
+        "  wrap.appendChild(slot);return wrap;}"
+        "function renderExprBlock(exNode,onRemove){"
+        "  var def=BLOCKS[exNode.type];if(!def||!def.asExpr)return document.createTextNode('?');"
+        "  var chip=document.createElement('span');"
+        "  chip.className='expr-block-inline';"
+        "  chip.style.background=getExprColor(exNode.type);"
+        "  chip.style.color='#fff';"
+        "  var lbl=document.createElement('span');lbl.textContent=exNode.type;chip.appendChild(lbl);"
+        "  def.inputs.forEach(function(inp,ji){"
+        "    if(inp.t==='expr'){"
+        "      (function(capturedJi,capturedExNode){"
+        "        var subSlot=document.createElement('span');"
+        "        var isSubActive=exprSel&&exprSel.isSubSlot&&exprSel.exNode===capturedExNode&&exprSel.slotIdx===capturedJi;"
+        "        subSlot.style.cssText='display:inline-flex;align-items:center;border-radius:5px;padding:2px 6px;cursor:pointer;font-size:11px;min-width:34px;border:2px '+(isSubActive?'solid #fff':'dashed rgba(255,255,255,0.6)')+';background:'+(isSubActive?'rgba(255,255,255,0.35)':'rgba(255,255,255,0.15)')+';';"
+        "        var subNode=(capturedExNode.children&&capturedExNode.children[capturedJi])||null;"
+        "        if(subNode){"
+        "          subSlot.appendChild(renderExprBlock(subNode,function(){if(!capturedExNode.children)capturedExNode.children=[];capturedExNode.children[capturedJi]=null;exprSel=null;render();}));"
+        "        }else{"
+        "          var sph=document.createElement('span');sph.textContent=inp.l||'?';"
+        "          sph.style.cssText='opacity:0.85;font-weight:700;color:#fff;pointer-events:none;';subSlot.appendChild(sph);"
+        "        }"
+        "        subSlot.addEventListener('click',function(e){"
+        "          e.stopPropagation();"
+        "          if(exprSel&&exprSel.isSubSlot&&exprSel.exNode===capturedExNode&&exprSel.slotIdx===capturedJi){"
+        "            exprSel=null;updatePalette();render();return;}"
+        "          exprSel={exNode:capturedExNode,slotIdx:capturedJi,isSubSlot:true};sel=null;"
+        "          document.getElementById('statusbar').innerHTML='<span style=\"color:#9a6700\">slot '+inp.l+' selected - click an expression to fill it</span>';"
+        "          document.querySelectorAll('.sub-slot-active').forEach(function(el){el.classList.remove('sub-slot-active');});"
+        "          subSlot.style.border='2px solid #fff';subSlot.style.background='rgba(255,255,255,0.35)';"
+        "          updatePalette();"
+        "        });"
+        "        chip.appendChild(subSlot);"
+        "      })(ji,exNode);"
+        "    }else if(inp.t==='sel'){"
+        "      var es=document.createElement('select');es.className='expr-sel';"
+        "      var opts=inp.o;if(typeof opts==='string')opts=getOptions(opts);"
+        "      opts.forEach(function(opt){var o=document.createElement('option');"
+        "        if(typeof opt==='object'){o.value=opt.v;o.textContent=opt.lb;}else{o.value=opt;o.textContent=opt;}"
+        "        es.appendChild(o);});es.value=exNode.params[ji]||'';"
+        "      es.addEventListener('click',function(e){e.stopPropagation();});"
+        "      es.addEventListener('change',function(e){e.stopPropagation();exNode.params[ji]=e.target.value;genCode();});"
+        "      chip.appendChild(es);"
+        "    }else if(inp.t==='vartext'){"
+        "      (function(capturedJiVt,capturedExNodeVt){"
+        "        var wrap=document.createElement('span');wrap.className='vartext-wrap';"
+        "        var ei=document.createElement('input');ei.type='text';ei.className='vartext-input';"
+        "        ei.value=capturedExNodeVt.params[capturedJiVt]||'0';"
+        "        ei.placeholder='0';"
+        "        var drop=null;"
+        "        function closeDrop(){if(drop){drop.remove();drop=null;}}"
+        "        function openDrop(filter){"
+        "          closeDrop();"
+        "          var vars=getVarSuggestions();"
+        "          var filtered=filter?vars.filter(function(v){return v.toLowerCase().indexOf(filter.toLowerCase())===0;}):vars;"
+        "          if(filtered.length===0&&filter){return;}"
+        "          drop=document.createElement('div');drop.className='vartext-drop';"
+        "          if(filtered.length===0){"
+        "            var empty=document.createElement('div');empty.className='vartext-drop-empty';"
+        "            empty.textContent='no variables yet';drop.appendChild(empty);"
+        "          }else{"
+        "            filtered.forEach(function(v){"
+        "              var item=document.createElement('div');item.className='vartext-drop-item';"
+        "              item.textContent=v;"
+        "              item.addEventListener('mousedown',function(e){"
+        "                e.preventDefault();e.stopPropagation();"
+        "                ei.value=v;capturedExNodeVt.params[capturedJiVt]=v;genCode();"
+        "                closeDrop();});"
+        "              drop.appendChild(item);});"
+        "          }"
+        "          wrap.appendChild(drop);"
+        "        }"
+        "        ei.addEventListener('click',function(e){e.stopPropagation();openDrop('');});"
+        "        ei.addEventListener('focus',function(e){openDrop('');});"
+        "        ei.addEventListener('input',function(e){"
+        "          e.stopPropagation();"
+        "          capturedExNodeVt.params[capturedJiVt]=e.target.value;genCode();"
+        "          var v=e.target.value;"
+        "          if(v===''){openDrop('');}else{openDrop(v);}"
+        "        });"
+        "        ei.addEventListener('blur',function(){setTimeout(closeDrop,150);});"
+        "        ei.addEventListener('keydown',function(e){"
+        "          e.stopPropagation();"
+        "          if(e.key==='Escape'||e.key==='Enter'){closeDrop();}"
+        "          if(e.key==='Enter'){ei.blur();}"
+        "        });"
+        "        wrap.appendChild(ei);chip.appendChild(wrap);"
+        "      })(ji,exNode);"
+        "    }else{"
+        "      var ei=document.createElement('input');ei.type=inp.t==='number'?'number':'text';"
+        "      ei.className='expr-input';ei.value=exNode.params[ji]||'';"
+        "      ei.style.width=(inp.t==='number'?'48px':'60px');"
+        "      ei.addEventListener('click',function(e){e.stopPropagation();});"
+        "      ei.addEventListener('input',function(e){e.stopPropagation();exNode.params[ji]=e.target.value;genCode();});"
+        "      chip.appendChild(ei);"
+        "    }});"
+        "  if(onRemove){"
+        "    var rx=document.createElement('span');rx.className='expr-remove';rx.textContent='x';"
+        "    rx.title='Remove expression';"
+        "    rx.addEventListener('click',function(e){e.stopPropagation();onRemove();});chip.appendChild(rx);}"
+        "  return chip;}"
         "function getOptions(key){"
         "  var base;"
         "  if(key==='DIGITAL_PIN_OPTIONS'){base=UNO_DIGITAL_IO_PINS;}"
@@ -658,18 +1122,56 @@ def arduino_block_coder(height=550, preset=None, drawer_content=None, pin_refs=N
         "  return opts;"
         "}"
         "var sel=null;"
+        + palette_js
         + initial_js +
+        "function updatePalette(){"
+        "  var ctx=document.getElementById('pal-context');"
+        "  var blockSec=document.getElementById('pal-blocks-section');"
+        "  var exprSec=document.getElementById('pal-expr-section');"
+        "  var exprTitle=document.getElementById('pal-expr-title');"
+        "  if(exprSel){"
+        "    ctx.className='has-expr';"
+        "    ctx.textContent=exprSel.isSubSlot?'fill sub-slot:':'fill value slot:';"
+        "    blockSec.style.display='none';"
+        "    exprTitle.style.display='none';"
+        "    exprSec.querySelectorAll('.block-btn').forEach(function(btn){btn.classList.remove('hidden');});"
+        "    return;"
+        "  }"
+        "  blockSec.style.display='flex';"
+        "  exprTitle.style.display='';"
+        "  if(!sel){"
+        "    ctx.className='';ctx.textContent='select a section';"
+        "    blockSec.querySelectorAll('.block-btn').forEach(function(btn){btn.classList.add('hidden');});"
+        "    exprSec.querySelectorAll('.block-btn').forEach(function(btn){btn.classList.add('hidden');});"
+        "    return;"
+        "  }"
+        "  ctx.className='has-sel';"
+        "  var parts=sel.pathStr.split(' \\u2192 ');"
+        "  ctx.textContent='adding to: '+parts[parts.length-1];"
+        "  var inNested=sel.pathStr.indexOf('\\u2192')!==-1;"
+        "  blockSec.querySelectorAll('.block-btn').forEach(function(btn){"
+        "    var type=btn.getAttribute('data-type');"
+        "    var def=BLOCKS[type];if(!def){btn.classList.remove('hidden');return;}"
+        "    var ok=inNested?(def.allowed.indexOf('if')!==-1||def.allowed.indexOf('for')!==-1||def.allowed.indexOf('while')!==-1)"
+        "                   :(def.allowed.indexOf(sel.section)!==-1);"
+        "    if(ok&&PALETTE_ALLOWED!==null)ok=PALETTE_ALLOWED.indexOf(type)!==-1;"
+        "    if(ok){btn.classList.remove('hidden');}else{btn.classList.add('hidden');}});"
+        "  exprSec.querySelectorAll('.block-btn').forEach(function(btn){btn.classList.add('hidden');});}"
         "function setSelection(section,targetArr,pathStr){"
         "  sel={section:section,targetArr:targetArr,pathStr:pathStr};"
         "  document.getElementById('statusbar').innerHTML='adding to: <span>'+pathStr+'</span>';"
+        "  updatePalette();"
         "  render();}"
         "function clearSelection(){"
-        "  sel=null;"
+        "  sel=null;exprSel=null;"
         "  document.getElementById('statusbar').textContent='click a section or if body to select it';"
+        "  updatePalette();"
         "  render();}"
         "document.addEventListener('click',function(e){"
         "  if(!e.target.closest('.section')&&!e.target.closest('.if-body')&&"
-        "     !e.target.closest('.block-btn')&&!e.target.closest('#codepanel'))clearSelection();});"
+        "     !e.target.closest('.block-btn')&&!e.target.closest('#codepanel')&&"
+        "     !e.target.closest('.expr-slot')&&!e.target.closest('.expr-block-inline')){"
+        "    clearSelection();}});"
         "function expandSection(elId){"
         "  ['gs','ss','ls'].forEach(function(id){"
         "    document.getElementById(id).classList.toggle('expanded', id===elId);});}"
@@ -690,19 +1192,42 @@ def arduino_block_coder(height=550, preset=None, drawer_content=None, pin_refs=N
         "document.querySelectorAll('.block-btn').forEach(function(btn){"
         "  btn.addEventListener('click',function(e){"
         "    e.stopPropagation();"
+        "    var type=btn.getAttribute('data-type');if(!type)return;"
+        "    var def=BLOCKS[type];if(!def)return;"
+        "    if(exprSel&&def.asExpr){"
+        "      var newNode=makeExNode(type);"
+        "      if(exprSel.condObj){"
+        "        exprSel.condObj[exprSel.side]=newNode;"
+        "      }else if(exprSel.isSubSlot){"
+        "        if(!exprSel.exNode.children)exprSel.exNode.children=[];"
+        "        exprSel.exNode.children[exprSel.slotIdx]=newNode;"
+        "      }else{"
+        "        if(!exprSel.block.exChildren)exprSel.block.exChildren=[];"
+        "        exprSel.block.exChildren[exprSel.slotIdx]=newNode;"
+        "      }"
+        "      exprSel=null;updatePalette();render();return;"
+        "    }"
+        "    if(!def.asStatement){flash(type+' can only go in expression slots');return;}"
         "    if(!sel){flash('Select a section or if body first');return;}"
-        "    var type=btn.getAttribute('data-type'),def=B[type];if(!def)return;"
         "    var inIf=sel.pathStr.indexOf('\\u2192')!==-1;"
-        "    if(inIf){if(def.allowed.indexOf('if')===-1){flash('\"'+type+'\" not allowed in if body');return;}}"
-        "    else{if(def.allowed.indexOf(sel.section)===-1){flash('Goes in: '+def.allowed.filter(function(a){return a!=='if';}).join(' or '));return;}}"
+        "    if(inIf){if(def.allowed.indexOf('if')===-1&&def.allowed.indexOf('for')===-1&&def.allowed.indexOf('while')===-1){flash('\"'+type+'\" not allowed here');return;}}"
+        "    else{if(def.allowed.indexOf(sel.section)===-1){flash('Goes in: '+def.allowed.filter(function(a){return a!=='if'&&a!=='for'&&a!=='while';}).join(' or '));return;}}"
         "    var block;"
         "    if(type==='ifblock'){"
         "      block={id:Date.now(),type:'ifblock',"
-        "        condition:{left:'',op:'==',right:'',joiner:'none',left2:'',op2:'==',right2:''},"
+        "        condition:{leftExpr:null,op:'==',rightExpr:null,joiner:'none',leftExpr2:null,op2:'==',rightExpr2:null},"
         "        ifbody:[],elseifs:[],elsebody:null};"
+        "    }else if(type==='forloop'){"
+        "      block={id:Date.now(),type:'forloop',forinit:'int i = 0',forcond:'i < 10',forincr:'i++',body:[]};"
+        "    }else if(type==='whileloop'){"
+        "      block={id:Date.now(),type:'whileloop',"
+        "        condition:{leftExpr:null,op:'!=',rightExpr:null,joiner:'none',leftExpr2:null,op2:'==',rightExpr2:null},"
+        "        body:[]};"
         "    }else{"
-        "      block={id:Date.now(),type:type,params:def.inputs.map(function(inp){"
-        "        if(inp.t==='sel'){var f=inp.o[0];return typeof f==='object'?f.v:f;}return '';})};"
+        "      var params=def.inputs.map(function(inp){"
+        "        if(inp.t==='sel'){var f=inp.o[0];return typeof f==='object'?f.v:f;}return '';});"
+        "      var exChildren=def.defaults?def.defaults.map(function(d){return d?JSON.parse(JSON.stringify(d)):null;}):[];"
+        "      block={id:Date.now(),type:type,params:params,exChildren:exChildren};"
         "    }"
         "    sel.targetArr.push(block);render();});});"
         "function render(){"
@@ -718,15 +1243,19 @@ def arduino_block_coder(height=550, preset=None, drawer_content=None, pin_refs=N
         "  genCode();}"
         "function collectAncestorArrays(){"
         "  var anc=[];if(!sel)return anc;"
-        "  function walk(arr){for(var i=0;i<arr.length;i++){var b=arr[i];if(b.type!=='ifblock')continue;"
-        "    if(containsTarget(b))anc.push(b.id);"
-        "    walk(b.ifbody);b.elseifs.forEach(function(ei){walk(ei.body);});if(b.elsebody)walk(b.elsebody);}}"
+        "  function walk(arr){for(var i=0;i<arr.length;i++){var b=arr[i];"
+        "    if(b.type==='ifblock'){if(containsTarget(b))anc.push(b.id);"
+        "      walk(b.ifbody);b.elseifs.forEach(function(ei){walk(ei.body);});if(b.elsebody)walk(b.elsebody);"
+        "    }else if(b.type==='forloop'||b.type==='whileloop'){if(b.body&&isDescendantOf(b.body,sel.targetArr))anc.push(b.id);if(b.body)walk(b.body);}}}"
         "  walk(SECTIONS[sel.section]);return anc;}"
         "function containsTarget(ifBlock){"
         "  if(ifBlock.ifbody===sel.targetArr)return true;"
         "  for(var i=0;i<ifBlock.elseifs.length;i++)if(ifBlock.elseifs[i].body===sel.targetArr)return true;"
         "  if(ifBlock.elsebody===sel.targetArr)return true;"
-        "  function walkDeep(arr){for(var j=0;j<arr.length;j++){var b=arr[j];if(b.type==='ifblock'&&containsTarget(b))return true;}return false;}"
+        "  function walkDeep(arr){for(var j=0;j<arr.length;j++){var b=arr[j];"
+        "    if(b.type==='ifblock'&&containsTarget(b))return true;"
+        "    if((b.type==='forloop'||b.type==='whileloop')&&b.body&&isDescendantOf(b.body,sel.targetArr))return true;"
+        "  }return false;}"
         "  return walkDeep(ifBlock.ifbody)||ifBlock.elseifs.some(function(ei){return walkDeep(ei.body);})||"
         "         (ifBlock.elsebody?walkDeep(ifBlock.elsebody):false);}"
         "function renderSection(elId,sName,anc){"
@@ -735,12 +1264,14 @@ def arduino_block_coder(height=550, preset=None, drawer_content=None, pin_refs=N
         "  SECTIONS[sName].forEach(function(block,idx){body.appendChild(renderBlock(block,idx,SECTIONS[sName],sName,sName,anc));});}"
         "function renderBlock(block,idx,parentArr,section,pathStr,anc){"
         "  if(block.type==='ifblock')return renderIfBlock(block,idx,parentArr,section,pathStr,anc);"
+        "  if(block.type==='forloop')return renderForBlock(block,idx,parentArr,section,pathStr,anc);"
+        "  if(block.type==='whileloop')return renderWhileBlock(block,idx,parentArr,section,pathStr,anc);"
         "  return renderActionBlock(block,idx,parentArr);}"
         "function renderActionBlock(block,idx,parentArr){"
         "  var def=B[block.type],d=document.createElement('div');d.className='ws-block';"
         "  if(block.type==='codeblock'){"
         "    d.classList.add('codeblock-block');"
-        "    var icon=document.createElement('span');icon.textContent='📌 ';d.appendChild(icon);"
+        "    var icon=document.createElement('span');icon.textContent='[lock] ';d.appendChild(icon);"
         "    var code=document.createElement('span');code.className='codeblock-code';"
         "    code.textContent=block.params[0]||'';d.appendChild(code);"
         "    function mkb2(ic,fn){var bt=document.createElement('button');bt.className='act';bt.textContent=ic;"
@@ -751,6 +1282,50 @@ def arduino_block_coder(height=550, preset=None, drawer_content=None, pin_refs=N
         "    return d;}"
         "  var nm=document.createElement('span');nm.className='blk-name';nm.textContent=block.type;d.appendChild(nm);"
         "  def.inputs.forEach(function(inp,j){"
+        "    if(inp.t==='expr'){"
+        "      d.appendChild(renderExprSlot(block,j,inp.l));return;}"
+        "    if(inp.t==='vartext'){"
+        "      (function(capturedJ,capturedInpO){"
+        "        var f=document.createElement('div');f.className='blk-field';"
+        "        var lb=document.createElement('label');lb.textContent=inp.l;f.appendChild(lb);"
+        "        var wrap=document.createElement('span');wrap.className='vartext-wrap';"
+        "        var ei=document.createElement('input');ei.type='text';ei.className='vartext-input';"
+        "        ei.value=block.params[capturedJ]||'';ei.placeholder='name';"
+        "        var drop=null;"
+        "        function closeDrop(){if(drop){drop.remove();drop=null;}}"
+        "        function openDrop(filter){"
+        "          closeDrop();"
+        "          var vars=capturedInpO?getPinSuggestions(capturedInpO):getVarSuggestions();"
+        "          var filtered=filter?vars.filter(function(v){return v.toLowerCase().indexOf(filter.toLowerCase())===0;}):vars;"
+        "          if(filtered.length===0&&filter){return;}"
+        "          drop=document.createElement('div');drop.className='vartext-drop';"
+        "          if(filtered.length===0){"
+        "            var empty=document.createElement('div');empty.className='vartext-drop-empty';"
+        "            empty.textContent='no options yet';drop.appendChild(empty);"
+        "          }else{"
+        "            filtered.forEach(function(v){"
+        "              var item=document.createElement('div');item.className='vartext-drop-item';"
+        "              item.textContent=v;"
+        "              item.addEventListener('mousedown',function(e){"
+        "                e.preventDefault();e.stopPropagation();"
+        "                ei.value=v;block.params[capturedJ]=v;genCode();"
+        "                closeDrop();});"
+        "              drop.appendChild(item);});"
+        "          }"
+        "          wrap.appendChild(drop);}"
+        "        ei.addEventListener('click',function(e){e.stopPropagation();openDrop('');});"
+        "        ei.addEventListener('focus',function(){openDrop('');});"
+        "        ei.addEventListener('input',function(e){"
+        "          e.stopPropagation();"
+        "          block.params[capturedJ]=e.target.value;genCode();"
+        "          e.target.value===''?openDrop(''):openDrop(e.target.value);});"
+        "        ei.addEventListener('blur',function(){setTimeout(closeDrop,150);});"
+        "        ei.addEventListener('keydown',function(e){"
+        "          e.stopPropagation();"
+        "          if(e.key==='Escape'||e.key==='Enter'){closeDrop();}"
+        "          if(e.key==='Enter'){ei.blur();}});"
+        "        wrap.appendChild(ei);f.appendChild(wrap);d.appendChild(f);"
+        "      })(j,inp.o||null);return;}"
         "    var f=document.createElement('div');f.className='blk-field';"
         "    var lb=document.createElement('label');lb.textContent=inp.l;f.appendChild(lb);"
         "    var el;"
@@ -761,19 +1336,15 @@ def arduino_block_coder(height=550, preset=None, drawer_content=None, pin_refs=N
         "        el.appendChild(o);});el.value=block.params[j];"
         "    }else{el=document.createElement('input');el.type=inp.t==='number'?'number':'text';el.value=block.params[j];}"
         "    el.className='blk-input';"
+        "    if(block.type==='increment'&&inp.l==='By'){"
+        "      var op=block.params[1]||'++';f.style.display=(op==='++'||op==='--')?'none':'';}"
         "    el.addEventListener('click',function(e){e.stopPropagation();});"
-        "    el.addEventListener('input',function(e){e.stopPropagation();block.params[j]=e.target.value;genCode();});"
+        "    el.addEventListener('input',function(e){e.stopPropagation();block.params[j]=e.target.value;genCode();"
+        "      if(block.type==='increment'&&inp.l==='Op'){"
+        "        var byF=d.querySelector('.by-field');"
+        "        if(byF)byF.style.display=(e.target.value==='++'||e.target.value==='--')?'none':'';}});"
+        "    if(block.type==='increment'&&inp.l==='By')f.className+=' by-field';"
         "    f.appendChild(el);d.appendChild(f);});"
-        "  if(block.type==='pinmode'){"
-        "    var rf=document.createElement('div');rf.className='blk-field';"
-        "    var rl=document.createElement('label');rl.textContent='Ref';rf.appendChild(rl);"
-        "    var rs=document.createElement('select');rs.className='blk-input';"
-        "    var blank=document.createElement('option');blank.value='';blank.textContent='';rs.appendChild(blank);"
-        "    PIN_REFS.forEach(function(item){"
-        "      var o=document.createElement('option');o.value=item;o.textContent=item;rs.appendChild(o);});"
-        "    rs.addEventListener('click',function(e){e.stopPropagation();});"
-        "    rs.addEventListener('change',function(e){e.stopPropagation();});"
-        "    rf.appendChild(rs);d.appendChild(rf);}"
         "  function mkb(ic,fn){var bt=document.createElement('button');bt.className='act';bt.textContent=ic;"
         "    bt.addEventListener('click',function(e){e.stopPropagation();fn();});return bt;}"
         "  d.appendChild(mkb('\\u2191',function(){if(idx>0){var t=parentArr[idx-1];parentArr[idx-1]=parentArr[idx];parentArr[idx]=t;render();}}));"
@@ -786,7 +1357,7 @@ def arduino_block_coder(height=550, preset=None, drawer_content=None, pin_refs=N
         "  var hdr=document.createElement('div');hdr.className='if-header';"
         "  hdr.appendChild(kw('if ('));appendCondFields(hdr,block.condition);hdr.appendChild(kw(')'));"
         "  hdr.appendChild(mkact('+ else if',function(){"
-        "    block.elseifs.push({condition:{left:'',op:'==',right:'',joiner:'none',left2:'',op2:'==',right2:''},body:[]});render();}));"
+        "    block.elseifs.push({condition:{leftExpr:null,op:'==',rightExpr:null,joiner:'none',leftExpr2:null,op2:'==',rightExpr2:null},body:[]});render();}));"
         "  if(block.elsebody===null)hdr.appendChild(mkact('+ else',function(){block.elsebody=[];render();}));"
         "  hdr.appendChild(mkact('\\u00D7',function(){"
         "    parentArr.splice(idx,1);"
@@ -810,6 +1381,73 @@ def arduino_block_coder(height=550, preset=None, drawer_content=None, pin_refs=N
         "    wrap.appendChild(elHdr);"
         "    wrap.appendChild(makeBodyZone(block.elsebody,section,parentPathStr+' \\u2192 else',true,anc));}"
         "  return wrap;}"
+        "function renderForBlock(block,idx,parentArr,section,parentPathStr,anc){"
+        "  var wrap=document.createElement('div');wrap.className='for-block';"
+        "  var hdr=document.createElement('div');hdr.className='for-header';"
+        "  var fkw=document.createElement('span');fkw.className='for-keyword';fkw.textContent='for (';hdr.appendChild(fkw);"
+        "  var fields=[{key:'init',label:'init',ph:'int i=0'},{key:'cond',label:'cond',ph:'i<10'},{key:'incr',label:'incr',ph:'i++'}];"
+        "  if(!block.forinit&&block.forinit!=='')block.forinit='int i = 0';"
+        "  if(!block.forcond&&block.forcond!=='')block.forcond='i < 10';"
+        "  if(!block.forincr&&block.forincr!=='')block.forincr='i++';"
+        "  var keys=['forinit','forcond','forincr'],labels=['init','cond','incr'],phs=['int i=0','i<10','i++'];"
+        "  for(var fi=0;fi<3;fi++){(function(ki,la,ph){"
+        "    var fw=document.createElement('div');fw.style.cssText='display:flex;flex-direction:column;font-size:8px;';"
+        "    var fl=document.createElement('label');fl.textContent=la;fl.style.color='#57606a';fw.appendChild(fl);"
+        "    var fe=document.createElement('input');fe.type='text';fe.className='cond-input';fe.value=block[ki]||'';"
+        "    fe.placeholder=ph;"
+        "    fe.addEventListener('click',function(e){e.stopPropagation();});"
+        "    fe.addEventListener('input',function(e){e.stopPropagation();block[ki]=e.target.value;genCode();});"
+        "    fw.appendChild(fe);hdr.appendChild(fw);"
+        "    if(fi<2){var sep=document.createElement('span');sep.className='for-keyword';sep.textContent=';';hdr.appendChild(sep);}"
+        "  })(keys[fi],labels[fi],phs[fi]);}"
+        "  var ekw=document.createElement('span');ekw.className='for-keyword';ekw.textContent=') {';hdr.appendChild(ekw);"
+        "  hdr.appendChild(mkact('\\u00D7',function(){parentArr.splice(idx,1);"
+        "    if(sel&&(sel.targetArr===block.body||isDescendantOf(block.body,sel.targetArr)))clearSelection();else render();}));"
+        "  wrap.appendChild(hdr);"
+        "  if(!block.body)block.body=[];"
+        "  var bodyPath=parentPathStr+' \\u2192 for';"
+        "  var bz=document.createElement('div');bz.className='for-body';"
+        "  if(sel&&sel.targetArr===block.body)bz.classList.add('selected');"
+        "  block.body.forEach(function(b,bi){bz.appendChild(renderBlock(b,bi,block.body,section,bodyPath,anc));});"
+        "  if(block.body.length===0){var hint=document.createElement('div');hint.className='body-hint';"
+        "    hint.textContent='click to select, then add blocks';bz.appendChild(hint);}"
+        "  bz.addEventListener('click',function(e){"
+        "    if(e.target===bz||e.target.classList.contains('body-hint')){e.stopPropagation();setSelection(section,block.body,bodyPath);}});"
+        "  wrap.appendChild(bz);"
+        "  var cz=document.createElement('div');cz.style.cssText='border-left:1px dashed #2e7d32;border-right:1px dashed #2e7d32;border-bottom:1px dashed #2e7d32;border-radius:0 0 5px 5px;padding:2px 6px;font-size:10px;color:#2e7d32;';"
+        "  cz.textContent='} // end for';wrap.appendChild(cz);"
+        "  return wrap;}"
+        "function renderWhileBlock(block,idx,parentArr,section,parentPathStr,anc){"
+        "  var wrap=document.createElement('div');wrap.className='while-block';"
+        "  var hdr=document.createElement('div');hdr.className='while-header';"
+        "  var wkw=document.createElement('span');wkw.className='while-keyword';wkw.textContent='while (';hdr.appendChild(wkw);"
+        "  if(!block.condition)block.condition={leftExpr:null,op:'!=',rightExpr:null,joiner:'none',leftExpr2:null,op2:'==',rightExpr2:null};"
+        "  appendCondFields(hdr,block.condition);"
+        "  var ewkw=document.createElement('span');ewkw.className='while-keyword';ewkw.textContent=') {';hdr.appendChild(ewkw);"
+        "  hdr.appendChild(mkact('\\u00D7',function(){parentArr.splice(idx,1);"
+        "    if(sel&&(sel.targetArr===block.body||isDescendantOf(block.body,sel.targetArr)))clearSelection();else render();}));"
+        "  wrap.appendChild(hdr);"
+        "  if(!block.body)block.body=[];"
+        "  var bodyPath=parentPathStr+' \\u2192 while';"
+        "  var bz=document.createElement('div');bz.className='while-body';"
+        "  if(sel&&sel.targetArr===block.body)bz.classList.add('selected');"
+        "  block.body.forEach(function(b,bi){bz.appendChild(renderBlock(b,bi,block.body,section,bodyPath,anc));});"
+        "  if(block.body.length===0){var hint=document.createElement('div');hint.className='body-hint';"
+        "    hint.textContent='click to select, then add blocks';bz.appendChild(hint);}"
+        "  bz.addEventListener('click',function(e){"
+        "    if(e.target===bz||e.target.classList.contains('body-hint')){e.stopPropagation();setSelection(section,block.body,bodyPath);}});"
+        "  wrap.appendChild(bz);"
+        "  var cz=document.createElement('div');cz.style.cssText='border-left:1px dashed #6a1b9a;border-right:1px dashed #6a1b9a;border-bottom:1px dashed #6a1b9a;border-radius:0 0 5px 5px;padding:2px 6px;font-size:10px;color:#6a1b9a;';"
+        "  cz.textContent='} // end while';wrap.appendChild(cz);"
+        "  return wrap;}"
+        "function isDescendantOf(body,targetArr){"
+        "  if(body===targetArr)return true;"
+        "  for(var i=0;i<body.length;i++){var b=body[i];"
+        "    if(b.type==='ifblock'){if(isDescendantOf(b.ifbody,targetArr))return true;"
+        "      for(var j=0;j<b.elseifs.length;j++)if(isDescendantOf(b.elseifs[j].body,targetArr))return true;"
+        "      if(b.elsebody&&isDescendantOf(b.elsebody,targetArr))return true;"
+        "    }else if(b.type==='forloop'||b.type==='whileloop'){if(isDescendantOf(b.body,targetArr))return true;}}"
+        "  return false;}"
         "function makeBodyZone(arr,section,pathStr,isLast,anc){"
         "  var div=document.createElement('div');"
         "  div.className='if-body'+(isLast?' last':'');"
@@ -825,7 +1463,10 @@ def arduino_block_coder(height=550, preset=None, drawer_content=None, pin_refs=N
         "  if(ifBlock.ifbody===targetArr)return true;"
         "  for(var i=0;i<ifBlock.elseifs.length;i++)if(ifBlock.elseifs[i].body===targetArr)return true;"
         "  if(ifBlock.elsebody===targetArr)return true;"
-        "  function walkDeep(arr){for(var j=0;j<arr.length;j++){var b=arr[j];if(b.type==='ifblock'&&isDescendant(b,targetArr))return true;}return false;}"
+        "  function walkDeep(arr){for(var j=0;j<arr.length;j++){var b=arr[j];"
+        "    if(b.type==='ifblock'&&isDescendant(b,targetArr))return true;"
+        "    if((b.type==='forloop'||b.type==='whileloop')&&b.body&&isDescendantOf(b.body,targetArr))return true;"
+        "  }return false;}"
         "  return walkDeep(ifBlock.ifbody)||ifBlock.elseifs.some(function(ei){return walkDeep(ei.body);})||"
         "         (ifBlock.elsebody?walkDeep(ifBlock.elsebody):false);}"
         "function kw(text){var s=document.createElement('span');s.className='if-keyword';s.textContent=text;return s;}"
@@ -851,16 +1492,65 @@ def arduino_block_coder(height=550, preset=None, drawer_content=None, pin_refs=N
         "  ['HIGH','LOW'].forEach(add);"
         "  return out;"
         "}"
+        "function getVarSuggestions(){"
+        "  var seen={},out=[];"
+        "  function add(v){if(!v)return;if(seen[v])return;seen[v]=true;out.push(v);}"
+        "  ['global','setup','loop'].forEach(function(sec){"
+        "    SECTIONS[sec].forEach(function(b){"
+        "      if(b.type==='intvar'||b.type==='longvar'||b.type==='stringvar'){add(b.params[0]);}"
+        "    });"
+        "    function walkBody(arr){arr.forEach(function(b){"
+        "      if(b.type==='intvar'||b.type==='longvar'){add(b.params[0]);}"
+        "      if(b.ifbody)walkBody(b.ifbody);"
+        "      if(b.elseifs)b.elseifs.forEach(function(ei){walkBody(ei.body);});"
+        "      if(b.elsebody)walkBody(b.elsebody);"
+        "      if(b.body)walkBody(b.body);"
+        "    });}"
+        "    walkBody(SECTIONS[sec]);"
+        "  });"
+        "  return out;"
+        "}"
+        "function getPinSuggestions(optKey){"
+        "  var seen={},out=[];"
+        "  SECTIONS.global.forEach(function(b){"
+        "    if(b.type==='intvar'&&b.params[0]&&!seen[b.params[0]]){seen[b.params[0]]=true;out.push(b.params[0]);}"
+        "  });"
+        "  getOptions(optKey||'DIGITAL_PIN_OPTIONS').forEach(function(p){"
+        "    if(!seen[p]){seen[p]=true;out.push(p);}"
+        "  });"
+        "  return out;"
+        "}"
+        "function renderCondExprSlot(cond,side,label){"
+        "  var exNode=cond[side]||null;"
+        "  var wrap=document.createElement('div');wrap.className='blk-field';"
+        "  var lb=document.createElement('label');lb.textContent=label;wrap.appendChild(lb);"
+        "  var slot=document.createElement('div');"
+        "  slot.className='expr-slot'+(exNode?' has-expr':'');"
+        "  var isActive=exprSel&&exprSel.condObj===cond&&exprSel.side===side;"
+        "  if(isActive)slot.classList.add('active');"
+        "  if(exNode){"
+        "    slot.appendChild(renderExprBlock(exNode,function(){cond[side]=null;exprSel=null;updatePalette();render();}));"
+        "  }else{"
+        "    var ph=document.createElement('span');ph.textContent=isActive?'> drop expr':'+ expr';slot.appendChild(ph);"
+        "  }"
+        "  slot.addEventListener('click',function(e){"
+        "    e.stopPropagation();"
+        "    if(exprSel&&exprSel.condObj===cond&&exprSel.side===side){exprSel=null;updatePalette();render();return;}"
+        "    exprSel={condObj:cond,side:side};sel=null;"
+        "    document.getElementById('statusbar').innerHTML='<span style=\"color:#9a6700\">click an expression to fill the '+label+' slot</span>';"
+        "    updatePalette();"
+        "    render();});"
+        "  wrap.appendChild(slot);return wrap;}"
         "function appendCondFields(parent,cond){"
-        "  parent.appendChild(condField('left',cond,'text'));"
+        "  parent.appendChild(renderCondExprSlot(cond,'leftExpr','left'));"
         "  parent.appendChild(condField('op',cond,'opsel'));"
-        "  parent.appendChild(condField('right',cond,'text'));"
+        "  parent.appendChild(renderCondExprSlot(cond,'rightExpr','right'));"
         "  parent.appendChild(condField('joiner',cond,'joinsel'));"
         "  var g2=document.createElement('span');"
         "  g2.style.display=cond.joiner!=='none'?'contents':'none';"
-        "  g2.appendChild(condField('left2',cond,'text'));"
+        "  g2.appendChild(renderCondExprSlot(cond,'leftExpr2','left2'));"
         "  g2.appendChild(condField('op2',cond,'opsel'));"
-        "  g2.appendChild(condField('right2',cond,'text'));"
+        "  g2.appendChild(renderCondExprSlot(cond,'rightExpr2','right2'));"
         "  parent.appendChild(g2);"
         "  var joinEl=parent.querySelector('.cond-joiner');"
         "  joinEl.addEventListener('change',function(){g2.style.display=joinEl.value!=='none'?'contents':'none';});}"
@@ -876,31 +1566,19 @@ def arduino_block_coder(height=550, preset=None, drawer_content=None, pin_refs=N
         "    [['none','\\u2014'],['and','and'],['or','or']].forEach(function(o){"
         "      var opt=document.createElement('option');opt.value=o[0];opt.textContent=o[1];el.appendChild(opt);});"
         "    el.value=obj[labelText];"
-        "  }else{el=document.createElement('input');el.type='text';el.className='cond-input';el.value=obj[labelText]||'';"
-        "    function closeSugg(){var old=f.querySelector('select.cond-sel');if(old)old.remove();}"
-        "    el.addEventListener('focus',function(e){"
-        "      e.stopPropagation();"
-        "      closeSugg();"
-        "      var list=document.createElement('select');list.className='blk-input cond-sel';"
-        "      var first=document.createElement('option');first.value='';first.textContent='suggest…';list.appendChild(first);"
-        "      getConditionSuggestions().forEach(function(v){var o=document.createElement('option');o.value=v;o.textContent=v;list.appendChild(o);});"
-        "      list.addEventListener('click',function(ev){ev.stopPropagation();});"
-        "      list.addEventListener('change',function(ev){if(!ev.target.value)return;el.value=ev.target.value;obj[labelText]=el.value;genCode();closeSugg();});"
-        "      list.addEventListener('blur',function(){closeSugg();});"
-        "      f.appendChild(list);"
-        "    });"
-        "    el.addEventListener('blur',function(){setTimeout(function(){if(document.activeElement&&document.activeElement.classList&&document.activeElement.classList.contains('cond-sel'))return;closeSugg();},0);});"
-        "    el.addEventListener('keydown',function(ev){if(ev.key==='Escape'){closeSugg();}});"
-        "    el.addEventListener('input',function(){closeSugg();});"
         "  }"
         "  el.addEventListener('click',function(e){e.stopPropagation();});"
-        "  el.addEventListener('input',function(e){e.stopPropagation();obj[labelText]=e.target.value;genCode();});"
         "  el.addEventListener('change',function(e){e.stopPropagation();obj[labelText]=e.target.value;genCode();});"
         "  f.appendChild(el);return f;}"
         "function genCond(c){"
-        "  var base=(c.left||'x')+' '+(c.op||'==')+' '+(c.right||'0');"
-        "  if(c.joiner&&c.joiner!=='none'&&c.left2)"
-        "    base+=' '+(c.joiner==='and'?'&&':'||')+' '+(c.left2||'x')+' '+(c.op2||'==')+' '+(c.right2||'0');"
+        "  var left=c.leftExpr?genExpr(c.leftExpr,null,'x'):(c.left||'x');"
+        "  var right=c.rightExpr?genExpr(c.rightExpr,null,'0'):(c.right||'0');"
+        "  var base=left+' '+(c.op||'==')+' '+right;"
+        "  if(c.joiner&&c.joiner!=='none'){"
+        "    var left2=c.leftExpr2?genExpr(c.leftExpr2,null,'x'):(c.left2||'x');"
+        "    var right2=c.rightExpr2?genExpr(c.rightExpr2,null,'0'):(c.right2||'0');"
+        "    if(left2!=='x')base+=' '+(c.joiner==='and'?'&&':'||')+' '+left2+' '+(c.op2||'==')+' '+right2;"
+        "  }"
         "  return base;}"
         "function genBlock(block,indent){"
         "  var pad='';for(var i=0;i<indent;i++)pad+='   ';"
@@ -917,7 +1595,21 @@ def arduino_block_coder(height=550, preset=None, drawer_content=None, pin_refs=N
         "      block.elsebody.forEach(function(b){lines.push(genBlock(b,indent+1));});"
         "      lines.push(pad+'}');}"
         "    return lines.join('\\n');}"
-        "  return pad+B[block.type].gen(block.params);}"
+        "  if(block.type==='forloop'){"
+        "    var init=block.forinit||'int i = 0';"
+        "    var cond=block.forcond||'i < 10';"
+        "    var incr=block.forincr||'i++';"
+        "    var lines=[pad+'for ('+init+'; '+cond+'; '+incr+') {'];"
+        "    (block.body||[]).forEach(function(b){lines.push(genBlock(b,indent+1));});"
+        "    lines.push(pad+'}');"
+        "    return lines.join('\\n');}"
+        "  if(block.type==='whileloop'){"
+        "    var cond=block.condition?genCond(block.condition):(block.whilecond||'true');"
+        "    var lines=[pad+'while ('+cond+') {'];"
+        "    (block.body||[]).forEach(function(b){lines.push(genBlock(b,indent+1));});"
+        "    lines.push(pad+'}');"
+        "    return lines.join('\\n');}"
+        "  return pad+BLOCKS[block.type].genStmt(block.params,block.exChildren||[]);}"
         "function genCode(){"
         "  var co=document.getElementById('codeout');"
         "  var gv=SECTIONS.global.map(function(b){return genBlock(b,0);}).join('\\n');"
@@ -979,6 +1671,7 @@ def arduino_block_coder(height=550, preset=None, drawer_content=None, pin_refs=N
         "  clearSelection();render();genCode();"
         "  flash('Reset!');});"
         "if(USERNAME){loadBlocks();}"
+        "updatePalette();"
         "render();"
         "});"
     )
