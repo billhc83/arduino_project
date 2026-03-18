@@ -15,9 +15,9 @@ st.set_page_config(layout="wide")
 #  PAGE IDENTITY  — edit these 4 lines for every new project
 # ════════════════════════════════════════════════════════════
 
-PAGE_TITLE       = "Project Fourteen Part 2: Code Cracker"   # shown in the assembly guide header
+PAGE_TITLE       = "Project Fourteen Part 4: Code Cracker"   # shown in the assembly guide header
 BANNER_IMAGE     = "graphics/code_cracker.png"            # top banner         # used in both tabs
-ARDUINO_PRESET   = "codebreaker"      
+ARDUINO_PRESET   = "codebreaker"
 # ════════════════════════════════════════════════════════════
 #  INTRO MARKDOWN  — replace the triple-quoted block below
 # ════════════════════════════════════════════════════════════
@@ -25,82 +25,136 @@ ARDUINO_PRESET   = "codebreaker"
 INTRO_MD = """
 <div style="max-width: 850px; margin: auto;">
 
-<h2>🕵️ Spy Training: Code Breaker System</h2>
+## 🕵️ Spy Training – Listening for a Signal
 
-<p>
-Welcome, Agent.
-</p>
+Agent, your Code Breaker is almost ready…
 
-<p>
-You are building a <b>Code Breaker</b> for future trainees.
-</p>
+The screen shows the challenge.
+The cipher is in place.
 
-<p>
-Your system will challenge them to find a hidden 5-letter word.
-</p>
+But right now, your system is missing something very important:
 
-<p>
-Every step you complete adds a new ability to your machine.
-</p>
+👉 It can’t *listen* yet.
 
-<hr>
+---
 
-<h3>🧠 How the System Works</h3>
+## 🎧 The Next Upgrade: Listening Mode
 
-<p>
-Every Code Breaker follows the same process:
-</p>
+We are going to teach your system to **wait for a message from the trainee**.
 
-<p>⌨️ <b>INPUT</b> → The trainee types a guess</p>
-<p>📓 <b>STORE</b> → The program remembers the guess</p>
-<p>🔍 <b>CHECK</b> → The program compares it to the answer</p>
-<p>💻 <b>OUTPUT</b> → The result is shown on the screen</p>
-<p>🏁 <b>RESULT</b> → The system checks if the code is cracked</p>
+Here is the code you are building:
 
-<hr>
+```cpp
+if (Serial.available() > 0) {
 
-<h3>🔁 The Flow of Your Program</h3>
+}
+```
 
-<p>
-Your program will always follow this loop:
-</p>
+---
 
-<p>
-⏳ WAIT → 📡 READ → 📓 STORE → 🔍 CHECK → 💬 RESPOND
-</p>
+## 🔍 Let’s Break It Down
 
-<p>
-Right now, your system is incomplete…
-but each step you build brings it closer to life.
-</p>
+### 🧩 What is `Serial.available()`?
 
-<hr>
+Think of the terminal like a **message inbox 📬**
 
-<h3>🧩 The Pieces You Will Build</h3>
+When a trainee types something, it gets placed into that inbox.
 
-<p>📦 <b>Variables</b> → store important information</p>
-<p>📡 <b>Input</b> → read what the user types</p>
-<p>🧠 <b>Logic</b> → compare and make decisions</p>
-<p>💬 <b>Output</b> → send messages to the screen</p>
-<p>🚪 <b>Conditions</b> → control what happens next</p>
+👉 `Serial.available()` checks:
 
-<hr>
+**“Is there anything in the inbox?”**
 
-<h3>🎯 Your Mission</h3>
+---
 
-<p>
-Build a complete system that can:
-</p>
+### 🔢 What does `> 0` mean?
 
-<p>✔ read a guess</p>
-<p>✔ check how close it is</p>
-<p>✔ display the result</p>
-<p>✔ detect when the code is cracked</p>
+The computer counts how many characters are waiting.
 
-<p>
-Stay sharp, Agent… 🕶️
-</p>
+For example:
+
+```
+spark  → 5 letters → count = 5
+```
+
+So when we write:
+
+```cpp
+Serial.available() > 0
+```
+
+We are asking:
+
+👉 “Is there at least ONE letter waiting?”
+
+If yes → the condition is TRUE ✅
+If no → the condition is FALSE ❌
+
+---
+
+### 🚪 The If Statement (The Gate)
+
+```cpp
+if (Serial.available() > 0) {
+```
+
+This acts like a **security door 🚪**
+
+* If there is a message → the door opens
+* If there is no message → the door stays closed
+
+Right now, the door opens…
+but nothing happens inside yet.
+
+---
+
+## 💻 What You Will See
+
+When the trainee types a guess:
+
+```
+Enter your guess:
+spark
+```
+
+👉 The system notices something was typed…
+
+…but it doesn’t respond yet.
+
+---
+
+## 🤔 Why Doesn’t It Do Anything?
+
+Because we have only taught it to:
+
+✔ detect input
+❌ NOT read it
+❌ NOT use it
+
+That comes next.
+
+---
+
+## 🎯 Your Mission
+
+Build the listening check so your system can:
+
+🟢 detect when a trainee types something
+🔒 ignore everything else
+
+---
+
+## 🧠 Think Like an Agent
+
+A good code-breaking system does not guess randomly.
+
+It waits…
+It listens…
+Then it acts.
+
+In the next step, you will teach your system to **capture the message**.
+
 """
+
 
 # ════════════════════════════════════════════════════════════
 #  PAGE RENDER — nothing below this line needs to change
@@ -111,7 +165,6 @@ banner = Image.open(BANNER_IMAGE)
 
 st.image(banner)
 st.markdown(INTRO_MD, unsafe_allow_html=True)
-
 
 arduino_block_coder(
     preset=ARDUINO_PRESET,

@@ -28,13 +28,15 @@ def serial_monitor(answer, cipher_lines, message='C O D E  B R E A K E R', heigh
 
     message_lines = [message] if isinstance(message, str) else message
     message_js = ''.join(
-        "print('  " + line.replace("'", "\\'") + "  ','system');"
-        for line in message_lines
+    "print('  " + str(line).replace("'", "\\'") + "  ','system');"
+    for line in message_lines
     )
+
     win_js = ''.join(
-        "print('  " + line.replace("'", "\\'") + "  ','win');"
+        "print('  " + str(line).replace("'", "\\'") + "  ','win');"
         for line in message_lines
     )
+
 
     answer = answer.strip().upper()
 

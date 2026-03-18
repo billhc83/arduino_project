@@ -202,17 +202,21 @@ def build_custom_sidebar(pages_map, unlocked_norm, directory="pages"):
                 if is_multi:
                     step_titles = [derive_title(f) for f in project_groups[project_num]]
                     is_active   = any(normalize(t) == normalize(current)
-                                      for t in step_titles)
+                                    for t in step_titles)
                     with st.expander(section_title(project_groups[project_num]),
-                                     expanded=is_active):
-                        for step_file in project_groups[project_num]:
+                                    expanded=is_active):
+                        # Sort steps ascending within the expander
+                        sorted_steps = sorted(project_groups[project_num], key=sort_key)
+                        for step_file in sorted_steps:
                             step_title = derive_title(step_file)
                             if normalize(step_title) in unlocked_norm:
                                 nav_button(step_title)
                     seen.add(project_num)
                 else:
-                    nav_button(title)
-                    seen.add(project_num)
+            # ADD THIS: Handle single-file projects
+                    if normalize(title) in unlocked_norm:
+                        nav_button(title)
+                        seen.add(project_num)
 
             # 3. Challenges
             unlocked_challenges = [
@@ -312,7 +316,7 @@ def intro_player(intro_vid):
 
 # ─── Create New User ──────────────────────────────────────────────────────────
 def create_new_user(username, password):
-    from data_base import conn
+    from data_base import conn, hash_password
     from sqlalchemy import text
     hashed = hash_password(password)
     try:

@@ -24,156 +24,237 @@ ARDUINO_PRESET   = "cb_step2"
 
 INTRO_MD = """
 <div style="max-width: 850px; margin: auto;">
+## 🕵️ Spy Training – Phase 3
 
-## 🕵️ Code Breaker – Phase 2
+Agent, continue building the new **Code Breaker System**.
 
-Agent, well done.
+The next group of trainees will depend on this machine, so every part must be installed correctly.
 
-You successfully cracked the training code and unlocked the hidden message.
-That means you passed the **Code Breaker Challenge**.
+As before, the system needs:
 
-But the mission isn’t over.
-
-Every year, a new group of trainees arrives at the spy academy.
-Each group must complete the same challenge you just solved.
-
-The problem is…
-
-**someone has to build the training system.**
+💻 a connection to the training terminal
+🔐 a cipher system to protect the hidden message
 
 ---
 
-## 🛠 Your New Role
+## 💻 Connecting the Training Terminal
 
-You are no longer just a trainee.
+The Code Breaker communicates through the **training terminal**.
 
-You are now part of the **training engineering team**.
+This is where trainees will enter guesses and receive feedback from the system.
 
-Your job is to build a **new Code Breaker Machine** that the next class of trainees will use.
+To activate this connection, we use:
 
-This machine must:
+```id="7k2xq1"
+Serial.begin(9600);
+```
 
-🔐 store a secret code
-⌨ accept guesses from the terminal
-🧠 compare each guess to the real code
-📊 report how close the guess is
-
-When a trainee finally guesses the correct code, the system will reveal the message — just like the one you unlocked.
+This allows the computer to send and receive messages.
 
 ---
 
+## 🔐 Cipher Values from Another Agent
+
+The cipher system used in this challenge was created by another agent during a previous training cycle.
+
+They left behind a set of cipher values for you to install.
+
+These values are required for the system to decode the hidden message when the correct password is entered.
+
+---
+
+## ⚠️ An Unusual Discovery
+
+While reviewing the cipher data, training command noticed something unexpected.
+
+The previous agent may have left **additional encoded information** inside the system.
+
+No one has been able to fully decode it yet.
+
+Before continuing, you have access to a **cipher test terminal** below.
+
+This tool lets you experiment with the cipher system and observe how the encoded data behaves.
+
+Take a moment to explore.
+
+Do you notice anything unusual?
+
+---"""
+MISSION = """
 ## 🎯 Your Mission
 
-You are going to rebuild the **Code Breaker System** step by step.
+Review the cipher values we put into the system and continue building the Code Breaker.
 
-But this time, you understand how it works.
 
-You will create the variables, logic, and comparisons that allow the computer to:
+## 🕵️ Spy Training – System Output Setup
 
-• read guesses
+Agent, we have now installed the **display system** for the Code Breaker.
+
+This is what the next trainees will see when they run your program.
+
+Let’s break it into sections.
+
+---
+
+## 💻 1. Starting the Terminal
+
+```cpp id="a1s9d2"
+Serial.begin(9600);
+```
+
+### 🔹 What the trainee sees:
+
+```id="b2k8q1"
+[ TERMINAL CONNECTED ]
+```
+
+### 🧠 What this does:
+
+This line starts communication between the computer and the **training terminal**.
+
+Without it, nothing would appear on the screen.
+
+---
+
+## 🧾 2. Displaying the Title
+
+```cpp id="c3m7x4"
+Serial.println("================================");
+Serial.println("     C O D E  B R E A K E R    ");
+Serial.println("================================");
+```
+
+### 🔹 What the trainee sees:
+
+```id="d4p9w6"
+================================
+     C O D E  B R E A K E R    
+================================
+```
+
+### 🧠 What this does:
+
+This creates a **header** so the trainee knows what program they are using.
+
+It makes the system feel like a real machine.
+
+---
+
+## 📜 3. Showing the Instructions
+
+```cpp id="e5r2t8"
+Serial.println("Find the hidden 5-letter word.");
+Serial.println("");
+```
+
+### 🔹 What the trainee sees:
+
+```id="f6y3u1"
+Find the hidden 5-letter word.
+```
+
+### 🧠 What this does:
+
+This tells the trainee what their goal is.
+
+The empty line (`""`) adds spacing to make the screen easier to read.
+
+---
+
+## 🔍 4. Displaying the Cipher Grid
+
+```cpp id="g7h4j2"
+Serial.println("X K Q S P A R K M Z");
+Serial.println("B R T F L A M E Q X");
+Serial.println("P Q S P A R K T Z R");
+Serial.println("W Z X B R A N D T P");
+Serial.println("S P A R K X Q Z B M");
+Serial.println("T R X N G L O W K B");
+Serial.println("Q Z B S P A R K X T");
+Serial.println("M X T R B L A Z E P");
+Serial.println("B T Z X Q M R N V K");
+Serial.println("P N V Q Z B X T M R");
+Serial.println("");
+```
+
+### 🔹 What the trainee sees:
+
+```id="h8k5l3"
+X K Q S P A R K M Z
+B R T F L A M E Q X
+P Q S P A R K T Z R
+W Z X B R A N D T P
+S P A R K X Q Z B M
+T R X N G L O W K B
+Q Z B S P A R K X T
+M X T R B L A Z E P
+B T Z X Q M R N V K
+P N V Q Z B X T M R
+```
+
+### 🧠 What this does:
+
+This is the **cipher grid**.
+
+The hidden word is placed inside this grid, but it is mixed in with other letters.
+
+The trainee must **search for patterns** and use guesses to find the correct word.
+
+---
+
+## ⌨️ 5. Prompting the User
+
+```cpp id="i9n6b4"
+Serial.println("Enter your guess:");
+```
+
+### 🔹 What the trainee sees:
+
+```id="j0v7c5"
+Enter your guess:
+```
+
+### 🧠 What this does:
+
+This tells the trainee it’s time to interact with the system.
+
+They will type their guess into the terminal.
+
+---
+
+## 🎯 Why This Matters
+
+You are building the **experience** for the next trainee.
+
+This part of the program:
+
+• introduces the challenge
+• displays the puzzle
+• tells the user what to do
+
+In the next steps, you will build the logic that **responds to their guesses**.
+
+Soon, your system won’t just display the challenge…
+
+it will **run it**.
+
+
+
+In the next steps, you will add the logic that allows the machine to:
+
+• listen for guesses
+
 • compare letters
-• count matches
+
+• count matching characters
+
 • unlock the message
 
-When you finish, the next class of trainees will face **your system**.
+Stay alert, Agent.
 
-Let’s start building the new code breaker.
+There may be more hidden in this system than expected.  
 
-</div>
 """
-WIRING_NOTES_MD = """
-### 🔐 The Secret Password
-
-##### String answer = "SPARK";
-
-This line stores the secret code word.
-
-The word must be inside quotes because it is a String.
-
-A String is a piece of text made from letters.
-
-##### Examples of Strings:
-
-"HELLO"
-"ROBOT"
-"SPARK"
-
-Our game will compare the player’s guess to this word.
-
-If every letter matches, the player cracks the code!
-
-### 🔢 Tracking the Score
-##### int likeness = 0;
-
-This variable keeps track of how many letters match.
-
-The word int means integer, which is just a whole number.
-
-Every time a letter matches the secret word, we will increase this number.
-
-Example:
-
-Guess:  STARK
-Answer: SPARK
-
-Matches:
-
-S ✔
-T ✖
-A ✔
-R ✔
-K ✔
-
-The program would count 4 matches, so:
-
-##### likeness = 4
-
-At the start of the game we set it to 0, because no letters have been checked yet.
-
-### 🚦 Is the Game Finished?
-##### bool solved = false;
-
-This variable tells the program if the puzzle has been solved.
-
-The word bool means boolean.
-
-A boolean can only have two values:
-
-true
-false
-
-Think of it like a switch:
-
-false → the code is still locked
-true  → the code has been cracked
-
-When the game starts, we set this to false because the player hasn’t solved the puzzle yet.
-
-Later in the program, when the guess matches the password, we will change it to:
-
-solved = true
-
-And the computer will announce:
-
-ACCESS GRANTED! 🟢
-
-### 🧠 What We Just Built
-
-We created the three memory boxes that power our game:
-
-
-answer ='SPARK' - This is the answer to our code
-
-likeness = 0 - This counts the number of correct characters in the user guess
-
-solved = False - This variable gets set to True when the guess is correct
-
-Now the computer has everything it needs to run the code-cracking game.
-
-Next, we’ll teach the Arduino how to listen for guesses from the player.
-"""
-
-
 # ════════════════════════════════════════════════════════════
 #  PAGE RENDER — nothing below this line needs to change
 # ════════════════════════════════════════════════════════════
@@ -183,9 +264,51 @@ banner = Image.open(BANNER_IMAGE)
 
 st.image(banner)
 st.markdown(INTRO_MD, unsafe_allow_html=True)
+from components.code_breaker import serial_monitor
+serial_monitor(
+    answer = 'CHASER',
+    cipher_lines= [
+    'TRSTARENM',
+    'PLSPAREKI',
+    'BVSHAPELO',
+    'GHSHARPXW',
+    'WECHARTOP',
+    'QWCHASERT',
+    'MKPHASEUY',
+    'LKJHGFRDSA',
+    'MNBVCXZPOI',
+    'QWERTYUIOP'],
+    message = [
+"DECRYPTION COMPLETE",
+"",
+"IF YOU ARE READING THIS,",
+"YOU HAVE PASSED THE FIRST TEST.",
+"",
+"I WAS THE LAST AGENT",
+"TO WORK ON THIS SYSTEM.",
+"",
+"THE TRAINING PROGRAM IS REAL,",
+"BUT NOT EVERYTHING HERE",
+"IS WHAT IT SEEMS.",
+"",
+"THE CODE YOU JUST BROKE",
+"WAS BUILT BY ANOTHER TRAINEE.",
+"",
+"NOW IT IS YOUR TURN.",
+"",
+"BUILD A NEW CODE BREAKER",
+"FOR THE NEXT GROUP.",
+"",
+"CHOOSE A SECRET WORD.",
+"CREATE THE MATCH SYSTEM.",
+"HIDE A MESSAGE INSIDE.",
+"",
+"MAKE IT CHALLENGING.",
+"",
+"SOMEONE WILL TRY TO BREAK",
+"THE SYSTEM YOU BUILD."]) # type: ignore
 
-if WIRING_NOTES_MD:
-    st.markdown(WIRING_NOTES_MD)
+st.markdown(MISSION, unsafe_allow_html=True)
 
 arduino_block_coder(
     preset=ARDUINO_PRESET,
