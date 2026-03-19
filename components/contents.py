@@ -239,7 +239,7 @@ The switch is the boss.
             },
             "howto": {
                 "label": "🔧 How To",
-                "content": "<p>1. Check if <b>likeness</b> equals 5.</p><p>2. If yes:</p><ul><li>Show a success message: \"CODE CRACKED! ACCESS GRANTED.\"</li><li>Set <b>solved</b> to true.</li></ul><p>3. If no:</p><ul><li>Prompt the trainee: 'Try again:'</li></ul><p>This step makes the device behave like a real mission control, giving immediate results for the trainee’s action.</p>"
+                "content": "<p>1. Check if <b>likeness</b> equals 5.</p><p>2. If yes:</p><ul><li>Show a success message: \"CODE CRACKED! ACCESS GRANTED.\"</li><li>Set <b>solved</b> to True.</li></ul><p>3. If no:</p><ul><li>Prompt the trainee: 'Try again:'</li></ul><p>This step makes the device behave like a real mission control, giving immediate results for the trainee’s action.</p>"
             },
             "logic": {
                 "label": "🧠 Logic",
@@ -267,6 +267,52 @@ The switch is the boss.
         }
     }
 ],
+
+"patrol_alarm": {
+    "title": "📘 Light Bar Control Guide",
+    "tip": "Build the flashing pattern that controls the patrol light bar.",
+    "tabs": {
+        "mission": {
+            "label": "🧠 Mission",
+            "content": f"""
+            {patrol_lights}
+
+<h3>You are building the patrol vehicle light bar system.</h3>
+
+<p>
+The light bar must flash in a clear pattern so people can see the vehicle at night.
+</p>
+
+<p>
+The system follows these rules:
+</p>
+
+<p>
+- The switch controls the whole system.<br>
+- If the button is OFF → all lights stay OFF.<br>
+- If the button is ON(pressed) → the flashing pattern begins.<br>
+- The lights flash one at a time.<br>
+- The pattern repeats again and again.
+</p>
+
+<p>
+Each light flash must use a short pause.
+</p>
+
+<p>
+At Night Patrol Academy we use:<br>
+<b>delay(150)</b>
+</p>
+
+<p>
+Use this delay after each light turns ON and turns OFF.
+</p>
+
+<p>
+Your job is to build the flashing pattern using blocks.
+</p>
+"""
+        },
         "wiring": {
             "label": "🔌 Wiring",
             "content": """
@@ -336,3 +382,5 @@ The button controls everything.
 """
         }
     }
+}
+}

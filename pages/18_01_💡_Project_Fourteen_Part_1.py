@@ -2,7 +2,7 @@ import sys
 import os
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 import streamlit as st
-from components.arduino_blocks import arduino_block_coder
+from components.block_builder_launcher import block_builder_launcher
 from components.contents import DRAWER_CONTENT
 from PIL import Image
 from utils.utils import hover_zoom_at_cursor, complete_step_and_continue, get_automated_pages
@@ -102,7 +102,7 @@ serial_monitor(
 "FOR THE NEXT GROUP OF TRAINEES.",
 "",
 "TRAINING COMMAND OUT."
-])
+]) # type: ignore
 
 
 

@@ -2,7 +2,7 @@ import sys
 import os
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 import streamlit as st
-from components.arduino_blocks import arduino_block_coder
+from components.block_builder_launcher import block_builder_launcher
 from components.contents import DRAWER_CONTENT
 from PIL import Image
 from utils.utils import hover_zoom_at_cursor, complete_step_and_continue, get_automated_pages
@@ -255,13 +255,11 @@ with tab2:
 if WIRING_NOTES_MD:
     st.markdown(WIRING_NOTES_MD)
 
-arduino_block_coder(
+block_builder_launcher(
     preset=ARDUINO_PRESET,
-    pin_refs=ARDUINO_PIN_REFS,
     drawer_content=DRAWER_CONTENT.get(ARDUINO_PRESET),
     username=st.session_state.get("user_id"),
     page=page,
-    height=620,
 )
 
 if CHALLENGES_MD:

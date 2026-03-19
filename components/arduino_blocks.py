@@ -638,7 +638,7 @@ def parse_progression(sketch_code):
 
 # ── Component ─────────────────────────────────────────────────────────
 
-def arduino_block_coder(height=550, preset=None, drawer_content=None, pin_refs=None, username=None, page=None, fill_conditions=None, fill_values=None):
+def arduino_block_coder(height=550, preset=None, drawer_content=None, pin_refs=None, username=None, page=None, fill_conditions=None, fill_values=None, return_html=False, is_overlay=False):
 
     # Guard: if a string is passed positionally treat it as preset
     if isinstance(height, str):
@@ -1094,6 +1094,10 @@ def arduino_block_coder(height=550, preset=None, drawer_content=None, pin_refs=N
         "<div id='drawer-tab'><span>&#128214; Info</span></div>"
     )
 
+    extra_buttons = ""
+    if is_overlay:
+        extra_buttons = "<button class='cbtn' id='saveclosebtn' style='color:#cf222e; border-color:#cf222e; font-weight:700;'>&#10005; Save & Close</button>"
+
     body = (
         "<div id='statusbar'>click a section or if body to select it</div>"
         "<div style='padding-bottom:400px;'>"
@@ -1155,6 +1159,7 @@ def arduino_block_coder(height=550, preset=None, drawer_content=None, pin_refs=N
         "<div id='codepanel'>"
         "<div id='code-btns'>"
         "<button class='cbtn' id='copybtn'>&#128203; Copy</button>"
+        + extra_buttons +
         "<button class='cbtn' id='clrbtn'>&#128465; Clear</button>"
         "<button class='cbtn' id='savebtn'>&#128190; Save</button>"
         "<button class='cbtn' id='resetbtn'>&#8617;&#65039; Reset</button>"
@@ -1182,6 +1187,15 @@ def arduino_block_coder(height=550, preset=None, drawer_content=None, pin_refs=N
     items_js = "[" + ",".join('"' + i.replace('\\', '\\\\').replace('"', '\\"') + '"' for i in active_refs) + "]"
     pin_refs_js = "var PIN_REFS=" + items_js + ";"
     drawer_steps_js = "var DRAWER_STEPS=" + (json.dumps(drawer_steps) if drawer_steps else "null") + ";"
+    
+    overlay_js = ""
+    if is_overlay:
+        overlay_js = """
+        document.getElementById('saveclosebtn').addEventListener('click',function(){
+            saveBlocks();
+            setTimeout(function(){ window.parent.postMessage({type:'bb_close'}, '*'); }, 600);
+        });
+        """
 
     js = (
         "var USERNAME=" + (("'" + username + "'") if username else "null") + ";"
@@ -2514,6 +2528,7 @@ def arduino_block_coder(height=550, preset=None, drawer_content=None, pin_refs=N
         "updatePalette();"
         "render();"
         "if(PROGRESSION_MODE)checkStepComplete();"
+        + overlay_js +
         "});"
     )
 
@@ -2526,5 +2541,8 @@ def arduino_block_coder(height=550, preset=None, drawer_content=None, pin_refs=N
         "<script>" + js + "</script>"
         "</body></html>"
     )
+
+    if return_html:
+        return html
 
     components.html(html, height=height, scrolling=True)
