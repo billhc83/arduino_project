@@ -3,6 +3,7 @@ import os
 from typing import Optional
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'components'))
 
 from fastapi import FastAPI
 from fastapi.responses import HTMLResponse
