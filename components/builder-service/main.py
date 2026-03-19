@@ -19,6 +19,7 @@ class BuilderRequest(BaseModel):
     username: Optional[str] = None
     page: Optional[str] = None
     drawer_content: Optional[Any] = None
+    pin_refs: Optional[Any] = None
 
 @app.post("/builder", response_class=HTMLResponse)
 def builder(req: BuilderRequest):
@@ -27,6 +28,7 @@ def builder(req: BuilderRequest):
         username=req.username,
         page=req.page,
         drawer_content=req.drawer_content,
+        pin_refs=req.pin_refs,
         return_html=True,
         is_overlay=True,
     )
