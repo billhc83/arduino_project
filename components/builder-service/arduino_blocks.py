@@ -2,7 +2,7 @@ import re
 import json
 import streamlit.components.v1 as components
 try:
-    from components.presets import PRESETS, PIN_REFS
+    from presets import PRESETS, PIN_REFS
 except ImportError:
     from presets import PRESETS, PIN_REFS
 

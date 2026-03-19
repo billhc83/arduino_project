@@ -1,5 +1,5 @@
 # ── Preset sketches ───────────────────────────────────────────────────
-from components.codebreaker_presets import CODEBREAKER_PRESETS
+from codebreaker_presets import CODEBREAKER_PRESETS
 
 PRESETS = {
     'engine_start': {
