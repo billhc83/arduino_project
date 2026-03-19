@@ -1,17 +1,24 @@
 import streamlit as st
 import streamlit.components.v1 as components
+import requests
+import html
 
 def block_builder_launcher(preset, username=None, page=None, drawer_content=None, pin_refs=None):
-    
-    # Build the builder URL
-    base_url = "https://arduino-builder-service.onrender.com/builder"
-    params = f"?preset={preset}"
-    if username:
-        params += f"&username={username}"
-    if page:
-        params += f"&page={page}"
-    
-    builder_url = base_url + params
+    html_source = ""
+    try:
+        url = "https://arduino-builder-service.onrender.com/builder"
+        payload = {
+            "preset": preset,
+            "username": username,
+            "page": page,
+            "drawer_content": drawer_content
+        }
+        resp = requests.post(url, json=payload, timeout=10)
+        resp.raise_for_status()
+        html_source = html.escape(resp.text)
+    except Exception as e:
+        st.error(f"Error loading block builder: {e}")
+        return
 
     # Inject FAB and overlay directly into Streamlit DOM
     st.markdown(f"""
@@ -58,7 +65,7 @@ def block_builder_launcher(preset, username=None, page=None, drawer_content=None
     </div>
 
     <div id="bb-overlay">
-        <iframe id="bb-iframe" src="{builder_url}"></iframe>
+        <iframe id="bb-iframe" srcdoc="{html_source}"></iframe>
     </div>
 
     <script>
@@ -67,7 +74,6 @@ def block_builder_launcher(preset, username=None, page=None, drawer_content=None
         var overlay = document.getElementById('bb-overlay');
         var isOpen = false;
 
-        function openBuilder() {{
             isOpen = true;
             overlay.style.display = 'block';
             setTimeout(function() {{
