@@ -4,10 +4,7 @@ try:
     import streamlit.components.v1 as components
 except ImportError:
     components = None
-try:
-    from presets import PRESETS, PIN_REFS
-except ImportError:
-    from presets import PRESETS, PIN_REFS
+from presets import PRESETS, PIN_REFS
 
 
 # ── Sketch parser ─────────────────────────────────────────────────────
@@ -458,14 +455,12 @@ def parse_blocks(code, fill_conditions=False, fill_values=False):
             continue
         m = re.match(r'Serial\.begin\s*\(\s*(\d+)\s*\)\s*;', line)
         if m: blocks.append({'type':'serialbegin','params':[m.group(1)]}); continue
-        m = re.match(r'Serial\.println\s*\(\s*"([^"]*)"\s*\)\s*;', line)
-        if m: blocks.append({'type':'serialprint','params':['"' + m.group(1) + '"','println']}); continue
-        m = re.match(r'Serial\.print\s*\(\s*"([^"]*)"\s*\)\s*;', line)
-        if m: blocks.append({'type':'serialprint','params':['"' + m.group(1) + '"','print']}); continue
-        m = re.match(r'Serial\.println\s*\(\s*(.+?)\s*\)\s*;', line)
+        m = re.match(r'Serial\.(print|println)\s*\(\s*(.+?)\s*\)\s*;', line)
         if m:
-            ex = process(parse_expr(m.group(1)))
-            blocks.append({'type':'serialprintln','params':[''],'exChildren':[ex]})
+            fn_type = m.group(1)
+            content = m.group(2).strip()
+            ex = process(parse_expr(content))
+            blocks.append({'type':'serialprint','params':[fn_type],'exChildren':[ex]})
             continue
         m = re.match(r'(\w+)\s*\+\+\s*;', line)
         if m: blocks.append({'type':'increment','params':[m.group(1),'++','1']}); continue
@@ -1079,10 +1074,16 @@ def arduino_block_coder(height=550, preset=None, drawer_content=None, pin_refs=N
             + tab.get("label", key) +
             "</button>"
         )
-        image_html = "<img src='" + tab["image"] + "' alt=''/>" if "image" in tab else ""
+        
+        image_html = ""
+        if "image_html" in tab:
+            image_html = tab["image_html"]
+        elif "image" in tab:
+            image_html = "<img src='" + tab["image"] + "' alt=''/>"
+            
         tab_panels_html += (
             "<div class='drawer-tab-panel" + active_class + "' id='dtab-" + key + "'>"
-            "<div>" + tab.get("content", "") + "</div>"
+            "<div>" + tab.get("content", "").replace("</", "<\\/") + "</div>"
             + image_html +
             "</div>"
         )
@@ -1125,7 +1126,6 @@ def arduino_block_coder(height=550, preset=None, drawer_content=None, pin_refs=N
         "<button class='block-btn' data-type='delay'>delay</button>"
         "<button class='block-btn' data-type='serialbegin'>Serial.begin</button>"
         "<button class='block-btn' data-type='serialprint'>Serial.print</button>"
-        "<button class='block-btn' data-type='serialprintln'>Serial.println</button>"
         "<button class='block-btn' data-type='ifblock'>if</button>"
         "<button class='block-btn' data-type='forloop'>for loop</button>"
         "<button class='block-btn' data-type='whileloop'>while loop</button>"
@@ -1331,12 +1331,10 @@ def arduino_block_coder(height=550, preset=None, drawer_content=None, pin_refs=N
         "  inputs:[{t:'sel',l:'Baud',o:['9600','19200','38400','57600','115200']}],"
         "  genStmt:function(p){return 'Serial.begin('+(p[0]||'9600')+');';}},"
         "serialprint:{allowed:['setup','loop','if','for','while'],asStatement:true,asExpr:false,"
-        "  inputs:[{t:'text',l:'Message'},{t:'sel',l:'',o:['println','print']}],"
-        "  genStmt:function(p){var fn=p[1]==='print'?'Serial.print':'Serial.println';"
-        "    return fn+'('+(p[0]||'\"Hello\"')+');';}},"
-        "serialprintln:{allowed:['setup','loop','if','for','while'],asStatement:true,asExpr:false,"
-        "  inputs:[{t:'expr',l:'Value',fallback:'0'}],"
-        "  genStmt:function(p,ex){return 'Serial.println('+genExpr(ex&&ex[0],p[0],'0')+');';}},"
+        "  inputs:[{t:'expr',l:'Value',fallback:'\"Hello\"'},{t:'sel',l:'',o:['println','print']}],"
+        "  defaults:[{type:'value',params:['\"Hello\"'],children:[]},null],"
+        "  genStmt:function(p,ex){var fn=p[0]==='print'?'Serial.print':'Serial.println';"
+        "    return fn+'('+genExpr(ex&&ex[0],null,'\"Hello\"')+');';}},"
         "serialreadstring:{allowed:[],asStatement:false,asExpr:true,"
         "  inputs:[],"
         "  genExpr:function(p){return 'Serial.readString()';}},"

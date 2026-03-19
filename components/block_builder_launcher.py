@@ -1,10 +1,10 @@
 import streamlit as st
 import streamlit.components.v1 as components
 import requests
-import html
+import base64
 
 def block_builder_launcher(preset, username=None, page=None, drawer_content=None, pin_refs=None):
-    html_source = ""
+    builder_url = ""
     try:
         url = "https://arduino-builder-service.onrender.com/builder"
         payload = {
@@ -16,7 +16,8 @@ def block_builder_launcher(preset, username=None, page=None, drawer_content=None
         }
         resp = requests.post(url, json=payload, timeout=10)
         resp.raise_for_status()
-        html_source = html.escape(resp.text)
+        b64_html = base64.b64encode(resp.text.encode('utf-8')).decode('utf-8')
+        builder_url = f"data:text/html;base64,{b64_html}"
     except Exception as e:
         st.error(f"Error loading block builder: {e}")
         return
@@ -66,7 +67,7 @@ def block_builder_launcher(preset, username=None, page=None, drawer_content=None
     </div>
 
     <div id="bb-overlay">
-        <iframe id="bb-iframe" srcdoc="{html_source}"></iframe>
+        <iframe id="bb-iframe" src="{builder_url}"></iframe>
     </div>
 
     <script>

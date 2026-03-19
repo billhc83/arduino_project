@@ -24,7 +24,7 @@ void loop() {
   } else {                        // Switch OFF
 
     digitalWrite(2, LOW);         // Light OFF
-    digitalWrite(2, LOW);        // Engine OFF (reset)
+    digitalWrite(5, LOW);        // Engine OFF (reset)
 
   }
 }

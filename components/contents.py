@@ -19,8 +19,8 @@ DRAWER_CONTENT = {
         "tabs": {
             "mission": {
                 "label": "🧠 Mission",
-         "content": f"""
-
+                "image_html": engine_controls,
+                "content": """
 <h3>You are building an engine system with rules:</h3>
 <p>
 - The switch controls the whole system.
@@ -31,11 +31,7 @@ DRAWER_CONTENT = {
 
 Your job is to build these rules using blocks.
 </p>
-{engine_controls}
-
 """
-
-
             },
             "wiring": {
                 "label": "🔌 Wiring",
@@ -274,9 +270,8 @@ The switch is the boss.
     "tabs": {
         "mission": {
             "label": "🧠 Mission",
-            "content": f"""
-            {patrol_lights}
-
+            "image_html": patrol_lights,
+            "content": """
 <h3>You are building the patrol vehicle light bar system.</h3>
 
 <p>
