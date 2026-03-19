@@ -7,7 +7,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from fastapi import FastAPI
 from fastapi.responses import HTMLResponse
 from fastapi.middleware.cors import CORSMiddleware
-from components.arduino_blocks import arduino_block_coder
+from arduino_blocks import arduino_block_coder
 
 app = FastAPI()
 
