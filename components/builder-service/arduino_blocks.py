@@ -1,6 +1,9 @@
 import re
 import json
-import streamlit.components.v1 as components
+try:
+    import streamlit.components.v1 as components
+except ImportError:
+    components = None
 try:
     from presets import PRESETS, PIN_REFS
 except ImportError:
@@ -2548,4 +2551,5 @@ def arduino_block_coder(height=550, preset=None, drawer_content=None, pin_refs=N
     if return_html:
         return html
 
-    components.html(html, height=height, scrolling=True)
+    if components:
+        components.html(html, height=height, scrolling=True)
