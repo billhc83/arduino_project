@@ -32,6 +32,17 @@ def builder(req: BuilderRequest):
     )
     return html
 
+@app.get("/builder", response_class=HTMLResponse)
+def builder_get(preset: Optional[str] = None, username: Optional[str] = None, page: Optional[str] = None):
+    html = arduino_block_coder(
+        preset=preset,
+        username=username,
+        page=page,
+        return_html=True,
+        is_overlay=True,
+    )
+    return html
+
 @app.get("/")
 def root():
     return {"message": "Arduino Builder Service is active"}
