@@ -2,7 +2,6 @@ import streamlit as st
 from PIL import Image
 from utils.utils import hover_zoom_at_cursor, complete_step_and_continue, get_automated_pages
 from components.block_builder_launcher import block_builder_launcher
-from components.contents import DRAWER_CONTENT
 
 # --- PAGE CONFIG ---
 # (Optionally add st.set_page_config here if not in main.py)

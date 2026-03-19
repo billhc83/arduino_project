@@ -3,7 +3,6 @@ import os
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 import streamlit as st
 from components.block_builder_launcher import block_builder_launcher
-from components.contents import DRAWER_CONTENT
 from PIL import Image
 from utils.utils import hover_zoom_at_cursor, complete_step_and_continue, get_automated_pages
 from utils.assembly_guide import assembly_guide

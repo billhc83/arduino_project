@@ -1,11 +1,9 @@
-import sys
-import os
 from typing import Optional
-
 from fastapi import FastAPI
 from fastapi.responses import HTMLResponse
 from fastapi.middleware.cors import CORSMiddleware
 from arduino_blocks import arduino_block_coder
+from contents import DRAWER_CONTENT
 
 app = FastAPI()
 
@@ -26,6 +24,7 @@ def builder(
         preset=preset,
         username=username,
         page=page,
+        drawer_content=DRAWER_CONTENT.get(preset),
         return_html=True,
         is_overlay=True,
     )
