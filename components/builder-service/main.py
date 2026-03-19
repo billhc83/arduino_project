@@ -10,7 +10,7 @@ app = FastAPI()
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
-    allow_methods=["POST"],
+    allow_methods=["*"],
     allow_headers=["*"],
 )
 
@@ -31,6 +31,10 @@ def builder(req: BuilderRequest):
         is_overlay=True,
     )
     return html
+
+@app.get("/")
+def root():
+    return {"message": "Arduino Builder Service is active"}
 
 @app.get("/health")
 def health():
