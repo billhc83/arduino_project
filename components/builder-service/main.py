@@ -1,7 +1,7 @@
 import sys
 import os
+from typing import Optional
 
-# Add the parent directory to the path so we can import components
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from fastapi import FastAPI
@@ -21,8 +21,8 @@ app.add_middleware(
 @app.get("/builder", response_class=HTMLResponse)
 def builder(
     preset: str,
-    username: str = None,
-    page: str = None,
+    username: Optional[str] = None,
+    page: Optional[str] = None,
 ):
     html = arduino_block_coder(
         preset=preset,
@@ -36,10 +36,3 @@ def builder(
 @app.get("/health")
 def health():
     return {"status": "ok"}
-```
-
-**`builder_service/requirements.txt`:**
-```
-fastapi
-uvicorn
-streamlit
