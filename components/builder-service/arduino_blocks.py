@@ -1082,7 +1082,7 @@ def arduino_block_coder(height=550, preset=None, drawer_content=None, pin_refs=N
         image_html = "<img src='" + tab["image"] + "' alt=''/>" if "image" in tab else ""
         tab_panels_html += (
             "<div class='drawer-tab-panel" + active_class + "' id='dtab-" + key + "'>"
-            "<p>" + tab.get("content", "") + "</p>"
+            "<div>" + tab.get("content", "") + "</div>"
             + image_html +
             "</div>"
         )

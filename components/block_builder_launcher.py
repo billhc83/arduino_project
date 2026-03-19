@@ -16,7 +16,7 @@ def block_builder_launcher(preset, username=None, page=None, drawer_content=None
         }
         resp = requests.post(url, json=payload, timeout=10)
         resp.raise_for_status()
-        html_source = resp.text.replace('"', '&quot;')
+        html_source = html.escape(resp.text)
     except Exception as e:
         st.error(f"Error loading block builder: {e}")
         return
