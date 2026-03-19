@@ -11,11 +11,12 @@ def block_builder_launcher(preset, username=None, page=None, drawer_content=None
             "preset": preset,
             "username": username,
             "page": page,
-            "drawer_content": drawer_content
+            "drawer_content": drawer_content,
+            "pin_refs": pin_refs
         }
         resp = requests.post(url, json=payload, timeout=10)
         resp.raise_for_status()
-        html_source = html.escape(resp.text)
+        html_source = resp.text.replace('"', '&quot;')
     except Exception as e:
         st.error(f"Error loading block builder: {e}")
         return
@@ -74,6 +75,7 @@ def block_builder_launcher(preset, username=None, page=None, drawer_content=None
         var overlay = document.getElementById('bb-overlay');
         var isOpen = false;
 
+        function openBuilder() {{
             isOpen = true;
             overlay.style.display = 'block';
             setTimeout(function() {{

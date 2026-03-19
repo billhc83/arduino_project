@@ -294,6 +294,7 @@ block_builder_launcher(
     drawer_content=DRAWER_CONTENT.get(ARDUINO_PRESET),
     username=st.session_state.get("user_id"),
     page=page,
+    pin_refs=ARDUINO_PIN_REFS,
 )
 
 if CHALLENGES_MD:
