@@ -1189,7 +1189,7 @@ def arduino_block_coder(height=550, preset=None, drawer_content=None, pin_refs=N
         active_refs = []
     items_js = "[" + ",".join('"' + i.replace('\\', '\\\\').replace('"', '\\"') + '"' for i in active_refs) + "]"
     pin_refs_js = "var PIN_REFS=" + items_js + ";"
-    drawer_steps_js = "var DRAWER_STEPS=" + (json.dumps(drawer_steps) if drawer_steps else "null") + ";"
+    drawer_steps_js = "var DRAWER_STEPS=" + (json.dumps(drawer_steps).replace("</", "<\\/") if drawer_steps else "null") + ";"
     
     overlay_js = ""
     if is_overlay:
