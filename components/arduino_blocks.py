@@ -1,7 +1,10 @@
 import re
 import json
 import streamlit.components.v1 as components
-from components.presets import PRESETS, PIN_REFS
+try:
+    from components.presets import PRESETS, PIN_REFS
+except ImportError:
+    from presets import PRESETS, PIN_REFS
 
 
 # ── Sketch parser ─────────────────────────────────────────────────────
