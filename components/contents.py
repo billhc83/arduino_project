@@ -37,6 +37,7 @@ DRAWER_CONTENT = {
                 "label": "🔌 Wiring",
                 "content": """
 <b>Match each part to its pin:</b>
+<p>
 
 🔘 Arm Switch → Pin 9  
 🔴 Engage Button → Pin 7  
@@ -46,13 +47,15 @@ DRAWER_CONTENT = {
 Find the part in the diagram.  
 Follow the wire.  
 Match it to the pin.
+
+</p>
 """
             },
             "logic": {
                 "label": "🧩 Logic",
                 "content": """
 <b>🔘 Important Button Rule</b>
-
+<p>
 Look at the wiring diagram.
 
 If the button connects to GND,
@@ -85,6 +88,7 @@ IF switch is OFF (else)
 
 Remember:
 The switch is the boss.
+</p>
 """
             }
         }
@@ -312,6 +316,7 @@ Your job is to build the flashing pattern using blocks.
             "label": "🔌 Wiring",
             "content": """
 <b>Match each part to its pin:</b>
+<p>
 
 🔘 Master Button → Pin 12  
 🔴 Red Light → Pin 8  
@@ -321,12 +326,15 @@ Your job is to build the flashing pattern using blocks.
 Find the part in the diagram.  
 Follow the wire.  
 Match it to the pin.
+
+</p>
 """
         },
         "logic": {
             "label": "🧩 Logic",
             "content": """
 <b>🔘 Button Input Rule</b>
+<p>
 
 Look at the wiring diagram.
 
@@ -374,6 +382,7 @@ All lights OFF.
 Remember:
 
 The button controls everything.
+</p>
 """
         }
     }

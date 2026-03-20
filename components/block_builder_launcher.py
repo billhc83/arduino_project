@@ -97,7 +97,16 @@ def block_builder_launcher(preset, username=None, page=None, drawer_content=None
         }}
 
         fab.addEventListener('click', function() {{
-            isOpen ? closeBuilder() : openBuilder();
+            if (isOpen) {{
+                var iframe = document.getElementById('bb-iframe');
+                if (iframe && iframe.contentWindow) {{
+                    iframe.contentWindow.postMessage({{type: 'bb_save_request'}}, '*');
+                }} else {{
+                    closeBuilder();
+                }}
+            }} else {{
+                openBuilder();
+            }}
         }});
 
         window.addEventListener('message', function(e) {{
@@ -140,7 +149,16 @@ def block_builder_launcher(preset, username=None, page=None, drawer_content=None
     }
 
     fab.addEventListener('click', function() {
-        isOpen ? closeBuilder() : openBuilder();
+        if (isOpen) {
+            var iframe = parent.getElementById('bb-iframe');
+            if (iframe && iframe.contentWindow) {
+                iframe.contentWindow.postMessage({type: 'bb_save_request'}, '*');
+            } else {
+                closeBuilder();
+            }
+        } else {
+            openBuilder();
+        }
     });
 
     window.addEventListener('message', function(e) {

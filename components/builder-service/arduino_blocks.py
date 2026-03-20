@@ -1197,9 +1197,11 @@ def arduino_block_coder(height=550, preset=None, drawer_content=None, pin_refs=N
     overlay_js = ""
     if is_overlay:
         overlay_js = """
-        document.getElementById('saveclosebtn').addEventListener('click',function(){
-            saveBlocks();
-            setTimeout(function(){ window.parent.postMessage({type:'bb_close'}, '*'); }, 600);
+        window.addEventListener('message', function(e) {
+            if (e.data && e.data.type === 'bb_save_request') {
+                saveBlocks();
+                setTimeout(function(){ window.parent.postMessage({type:'bb_close'}, '*'); }, 600);
+            }
         });
         """
 
