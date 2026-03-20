@@ -21,16 +21,16 @@ DRAWER_CONTENT = {
                 "label": "🧠 Mission",
                 "image_html": engine_controls,
                 "content": """
-<h3>You are building an engine system with rules:</h3>
-<p>
-- The switch controls the whole system.
-- The button starts the engine.
-- The engine keeps running until the switch turns OFF.
-- If the switch is OFF, nothing runs.
-- The "If" blocks are filled in already no need to change them.
+    <h3>You are building an engine system with rules:</h3>
+    <p>
+    - The switch controls the whole system.
+    - The button starts the engine.
+    - The engine keeps running until the switch turns OFF.
+    - If the switch is OFF, nothing runs.
+    - The "If" blocks are filled in already no need to change them.
 
-Your job is to build these rules using blocks.
-</p>
+    Your job is to build these rules using blocks.
+    </p>
 """
             },
             "wiring": {
