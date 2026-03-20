@@ -1102,8 +1102,6 @@ def arduino_block_coder(height=550, preset=None, drawer_content=None, pin_refs=N
     )
 
     extra_buttons = ""
-    if is_overlay:
-        extra_buttons = "<button class='cbtn' id='saveclosebtn' style='color:#cf222e; border-color:#cf222e; font-weight:700;'>&#10005; Save & Close</button>"
 
     body = (
         "<div id='statusbar'>click a section or if body to select it</div>"

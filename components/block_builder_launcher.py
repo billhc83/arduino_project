@@ -2,6 +2,9 @@ import streamlit as st
 import streamlit.components.v1 as components
 import requests
 import base64
+import base64
+from pathlib import Path
+_fab_icon_b64 = base64.b64encode(Path("graphics/fab.svg").read_bytes()).decode("ascii")
 
 def block_builder_launcher(preset, username=None, page=None, drawer_content=None, pin_refs=None):
     builder_url = ""
@@ -25,9 +28,9 @@ def block_builder_launcher(preset, username=None, page=None, drawer_content=None
     # Inject FAB and overlay directly into Streamlit DOM
     st.markdown(f"""
     <style>
-    #bb-fab {{
+   #bb-fab {{
         position: fixed; bottom: 28px; right: 28px; z-index: 999999;
-        width: 56px; height: 56px; border-radius: 50%;
+        width: 100px; height: 100px; border-radius: 50%;
         background: #0969da; border: none; cursor: pointer;
         box-shadow: 0 4px 16px rgba(9,105,218,0.4);
         display: flex; align-items: center; justify-content: center;
@@ -61,9 +64,7 @@ def block_builder_launcher(preset, username=None, page=None, drawer_content=None
     </style>
 
     <div id="bb-fab" title="Open Block Builder">
-        <svg viewBox="0 0 24 24">
-            <path d="M19,3H5C3.9,3 3,3.9 3,5V19C3,20.1 3.9,21 5,21H19C20.1,21 21,20.1 21,19V5C21,3.9 20.1,3 19,3M9,17H7V15H9V17M9,13H7V11H9V13M9,9H7V7H9V9M19,17H17V15H19V17M19,13H17V11H19V13M19,9H17V7H19V9Z" />
-        </svg>
+        <img src="data:image/svg+xml;base64,{_fab_icon_b64}" width="70" height="70" />
     </div>
 
     <div id="bb-overlay">
@@ -93,7 +94,7 @@ def block_builder_launcher(preset, username=None, page=None, drawer_content=None
             setTimeout(function() {{
                 overlay.style.display = 'none';
             }}, 250);
-            fab.innerHTML = '<svg viewBox="0 0 24 24"><path fill="white" d="M19,3H5C3.9,3 3,3.9 3,5V19C3,20.1 3.9,21 5,21H19C20.1,21 21,20.1 21,19V5C21,3.9 20.1,3 19,3M9,17H7V15H9V17M9,13H7V11H9V13M9,9H7V7H9V9M19,17H17V15H19V17M19,13H17V11H19V13M19,9H17V7H19V9Z" /></svg>';
+            fab.innerHTML = '<img src="data:image/svg+xml;base64,{_fab_icon_b64}" width="70" height="70" />';
         }}
 
         fab.addEventListener('click', function() {{
@@ -118,9 +119,9 @@ def block_builder_launcher(preset, username=None, page=None, drawer_content=None
     </script>
     """, unsafe_allow_html=True)
 
-    components.html("""
+    components.html(f"""
 <script>
-(function() {
+(function() {{
     var parent = window.parent.document;
     var fab = parent.getElementById('bb-fab');
     var overlay = parent.getElementById('bb-overlay');
@@ -128,44 +129,44 @@ def block_builder_launcher(preset, username=None, page=None, drawer_content=None
     
     var isOpen = false;
 
-    function openBuilder() {
+    function openBuilder() {{
         isOpen = true;
         overlay.style.display = 'block';
-        setTimeout(function() {
+        setTimeout(function() {{
             overlay.classList.add('visible');
-        }, 10);
+        }}, 10);
         fab.classList.add('open');
         fab.innerHTML = '<span style="color:white;font-size:24px;font-weight:300;">✕</span>';
-    }
+    }}
 
-    function closeBuilder() {
+    function closeBuilder() {{
         isOpen = false;
         overlay.classList.remove('visible');
         fab.classList.remove('open');
-        setTimeout(function() {
+        setTimeout(function() {{
             overlay.style.display = 'none';
-        }, 250);
-        fab.innerHTML = '<svg viewBox="0 0 24 24"><path fill="white" d="M19,3H5C3.9,3 3,3.9 3,5V19C3,20.1 3.9,21 5,21H19C20.1,21 21,20.1 21,19V5C21,3.9 20.1,3 19,3M9,17H7V15H9V17M9,13H7V11H9V13M9,9H7V7H9V9M19,17H17V15H19V17M19,13H17V11H19V13M19,9H17V7H19V9Z" /></svg>';
-    }
+        }}, 250);
+        fab.innerHTML = '<img src="data:image/svg+xml;base64,{_fab_icon_b64}" width="70" height="70" />';
+    }}
 
-    fab.addEventListener('click', function() {
-        if (isOpen) {
+    fab.addEventListener('click', function() {{
+        if (isOpen) {{
             var iframe = parent.getElementById('bb-iframe');
-            if (iframe && iframe.contentWindow) {
-                iframe.contentWindow.postMessage({type: 'bb_save_request'}, '*');
-            } else {
+            if (iframe && iframe.contentWindow) {{
+                iframe.contentWindow.postMessage({{type: 'bb_save_request'}}, '*');
+            }} else {{
                 closeBuilder();
-            }
-        } else {
+            }}
+        }} else {{
             openBuilder();
-        }
-    });
+        }}
+    }});
 
-    window.addEventListener('message', function(e) {
-        if (e.data && e.data.type === 'bb_close') {
+    window.parent.addEventListener('message', function(e) {{
+        if (e.data && e.data.type === 'bb_close') {{
             closeBuilder();
-        }
-    });
-})();
+        }}
+    }});
+}})();
 </script>
 """, height=0)
