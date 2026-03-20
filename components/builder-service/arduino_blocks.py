@@ -2220,6 +2220,7 @@ def arduino_block_coder(height=550, preset=None, drawer_content=None, pin_refs=N
         "          allSaves.setup=allSaves.setup.concat(sv.setup||[]);"
         "          allSaves.loop=allSaves.loop.concat(sv.loop||[]);});"
         "        buildWorkspace(CURRENT_STEP,allSaves);"
+        "        clearSelection();render();genCode();if(typeof checkStepComplete==='function')checkStepComplete();"
         "      }else{"
         "        SECTIONS.global=saved.global;"
         "        SECTIONS.setup=saved.setup;"
