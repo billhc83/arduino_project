@@ -20,6 +20,7 @@ class BuilderRequest(BaseModel):
     page: Optional[str] = None
     drawer_content: Optional[Any] = None
     pin_refs: Optional[Any] = None
+    is_overlay: Optional[bool] = False
 
 @app.post("/builder", response_class=HTMLResponse)
 def builder(req: BuilderRequest):
@@ -30,7 +31,7 @@ def builder(req: BuilderRequest):
         drawer_content=req.drawer_content,
         pin_refs=req.pin_refs,
         return_html=True,
-        is_overlay=True,
+        is_overlay=req.is_overlay or False,
     )
     return html
 

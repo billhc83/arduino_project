@@ -2122,6 +2122,7 @@ def arduino_block_coder(height=550, preset=None, drawer_content=None, pin_refs=N
         "function genBlocks(arr,indent){"
         "  var lines=[],extra=0;"
         "  arr.forEach(function(b){"
+        "    if(b.type==='phantom'||b.type==='phantom_resolved')return;"
         "    if(b.type==='codeblock'){"
         "      var c=(b.params[0]||'').trim();"
         "      if(c==='}'||c.match(/^\\}/))extra=Math.max(0,extra-1);"
