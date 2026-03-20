@@ -2,7 +2,6 @@ import streamlit as st
 import streamlit.components.v1 as components
 import requests
 import base64
-import base64
 from pathlib import Path
 _fab_icon_b64 = base64.b64encode(Path("graphics/fab.svg").read_bytes()).decode("ascii")
 
@@ -71,51 +70,57 @@ def block_builder_launcher(preset, username=None, page=None, drawer_content=None
     <div id="bb-overlay">
         <iframe id="bb-iframe" src="{builder_url}"></iframe>
     </div>
+    """, unsafe_allow_html=True)
 
-    <script>
-    (function() {{
-        var fab = document.getElementById('bb-fab');
-        var overlay = document.getElementById('bb-overlay');
-        var isOpen = false;
+    components.html(f"""
+<script>
+(function() {{
+    var parent = window.parent.document;
+    var fab = parent.getElementById('bb-fab');
+    var overlay = parent.getElementById('bb-overlay');
+    if(!fab || !overlay) return;
+    
+    var isOpen = false;
 
-        function openBuilder() {{
-            isOpen = true;
-            overlay.style.display = 'block';
-            setTimeout(function() {{
-                overlay.classList.add('visible');
-            }}, 10);
-            fab.classList.add('open');
-            fab.innerHTML = '<span style="color:white;font-size:24px;font-weight:300;">✕</span>';
-        }}
+    function openBuilder() {{
+        isOpen = true;
+        overlay.style.display = 'block';
+        setTimeout(function() {{
+            overlay.classList.add('visible');
+        }}, 10);
+        fab.classList.add('open');
+        fab.innerHTML = '<span style="color:white;font-size:24px;font-weight:300;">✕</span>';
+    }}
 
-        function closeBuilder() {{
-            isOpen = false;
-            overlay.classList.remove('visible');
-            fab.classList.remove('open');
-            setTimeout(function() {{
-                overlay.style.display = 'none';
-            }}, 250);
-            fab.innerHTML = '<img src="data:image/svg+xml;base64,{_fab_icon_b64}" width="70" height="70" />';
-        }}
+    function closeBuilder() {{
+        isOpen = false;
+        overlay.classList.remove('visible');
+        fab.classList.remove('open');
+        setTimeout(function() {{
+            overlay.style.display = 'none';
+        }}, 250);
+        fab.innerHTML = '<img src="data:image/svg+xml;base64,{_fab_icon_b64}" width="70" height="70" />';
+    }}
 
-        fab.addEventListener('click', function() {{
-            if (isOpen) {{
-                var iframe = document.getElementById('bb-iframe');
-                if (iframe && iframe.contentWindow) {{
-                    iframe.contentWindow.postMessage({{type: 'bb_save_request'}}, '*');
-                }} else {{
-                    closeBuilder();
-                }}
+    // Using onclick prevents stacking duplicate listeners if the component re-renders
+    fab.onclick = function() {{
+        if (isOpen) {{
+            var iframe = parent.getElementById('bb-iframe');
+            if (iframe && iframe.contentWindow) {{
+                iframe.contentWindow.postMessage({{type: 'bb_save_request'}}, '*');
             }} else {{
-                openBuilder();
-            }}
-        }});
-
-        window.addEventListener('message', function(e) {{
-            if (e.data && e.data.type === 'bb_close') {{
                 closeBuilder();
             }}
-        }});
-    }})();
-    </script>
-    """, unsafe_allow_html=True)
+        }} else {{
+            openBuilder();
+        }}
+    }};
+
+    window.parent.addEventListener('message', function(e) {{
+        if (e.data && e.data.type === 'bb_close') {{
+            closeBuilder();
+        }}
+    }});
+}})();
+</script>
+""", height=0)
