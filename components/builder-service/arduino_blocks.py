@@ -1074,13 +1074,18 @@ def arduino_block_coder(height=550, preset=None, drawer_content=None, pin_refs=N
             + tab.get("label", key) +
             "</button>"
         )
-        
+        # Handle image_b64 separately from content
         image_html = ""
-        if "image_html" in tab:
-            image_html = tab["image_html"]
+        if "image_b64" in tab:
+            image_html = (
+                "<div style='width:100%;margin-top:10px;overflow:hidden;"
+                "border-radius:8px;border:1px solid #dbeafe;'>"
+                "<img src='" + tab["image_b64"] + "' style='width:100%;display:block;' />"
+                "</div>"
+            )
         elif "image" in tab:
             image_html = "<img src='" + tab["image"] + "' alt=''/>"
-            
+        
         tab_panels_html += (
             "<div class='drawer-tab-panel" + active_class + "' id='dtab-" + key + "'>"
             "<div>" + tab.get("content", "") + "</div>"
