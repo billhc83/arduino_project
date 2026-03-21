@@ -4,7 +4,15 @@ from utils.email_utils import send_temp_password
 
 st.title("🛡️ Beginner Arduino Training")
 st.subheader("Login to your Course")
+import streamlit as st
 
+st.markdown("""
+<meta http-equiv="refresh" content="0;url=https://app.kidscode.ca">
+""", unsafe_allow_html=True)
+
+st.title("🚀 We've Moved!")
+st.markdown("Redirecting you to our new home...")
+st.markdown("Click here if you are not redirected: [app.kidscode.ca](https://app.kidscode.ca)")
 with st.form("Login Form", border=True):
     user_input = st.text_input("Username")
     pass_input = st.text_input("Password", type="password")
